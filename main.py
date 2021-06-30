@@ -1,6 +1,7 @@
 import argparse
 from MultiClassClassifier.multiclass_classifier_no_augmentation import *
 from MultiClassClassifier.multiclass_classifier_augmentation import *
+from MultiClassClassifier.multiclass_classifier_VGG16based_model import *
 from DeepLearningUtilities.metrics_analyzer import *
 
 if __name__ == '__main__':
@@ -58,10 +59,12 @@ if __name__ == '__main__':
         dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
         model_ver = 'v2'
         spe = True
+    elif args.dnn == 'VGG16':
+        dnn = MultiClassClassifierVGG16(num_classes=9)
     else:
         raise ValueError('Wrong DNN type :(')
 
-    if dnn is not None and model_ver is not None:
+    if dnn is not None:
         # Set up data generator for pre processing the images and fixing batch size
         dnn.set_up_data_generator()
 
@@ -70,9 +73,14 @@ if __name__ == '__main__':
             dnn.define_model_architecture_v1()
         elif model_ver == 'v2':
             dnn.define_model_architecture_v2()
+        else:
+            dnn.compile_model()
 
         # Train the DNN
-        h = dnn.train(epochs=50, steps_per_epoch=spe, architecture_ver=model_ver)
+        if model_ver is not None:
+            h = dnn.train(epochs=50, steps_per_epoch=spe, architecture_ver=model_ver)
+        else:
+            h = dnn.train(epochs=20)
 
         # Evaluate the model to get the loss value and the metrics values of the model in validation
         loss, accuracy = dnn.evaluate()
