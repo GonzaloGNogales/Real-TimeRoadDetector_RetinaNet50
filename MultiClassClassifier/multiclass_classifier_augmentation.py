@@ -1,13 +1,15 @@
+import os
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.optimizers import Adam, RMSprop
+from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
 
 
 class MultiClassClassifierAugmentation:
     def __init__(self, t_path='./dataset/train',
                  v_path='./dataset/validation',
-                 i_size=(150, 150)):
+                 i_size=(150, 150),
+                 b_size=32):
         self.train_path = t_path
         self.val_path = v_path
         self.input_size = i_size
@@ -15,7 +17,13 @@ class MultiClassClassifierAugmentation:
         self.validation_generator = None
         self.model = None
 
-    def set_up_data_generator(self, b_size=32):
+        t_len = 0
+        for d in os.listdir(t_path):
+            t_len += len(os.listdir(t_path + '/' + d))
+        self.train_length = t_len
+        self.batch_size = b_size
+
+    def set_up_data_generator(self):
         train_data_generator = ImageDataGenerator(rescale=1. / 255.,
                                                   rotation_range=30,
                                                   shear_range=0.2,
@@ -24,13 +32,13 @@ class MultiClassClassifierAugmentation:
                                                   horizontal_flip=True,
                                                   fill_mode='nearest')
         self.train_generator = train_data_generator.flow_from_directory(self.train_path,
-                                                                        batch_size=b_size,
+                                                                        batch_size=self.batch_size,
                                                                         class_mode='categorical',
                                                                         target_size=self.input_size)
 
         validation_data_generator = ImageDataGenerator(rescale=1. / 255.)
         self.validation_generator = validation_data_generator.flow_from_directory(self.val_path,
-                                                                                  batch_size=b_size,
+                                                                                  batch_size=self.batch_size,
                                                                                   class_mode='categorical',
                                                                                   target_size=self.input_size)
 
@@ -81,7 +89,7 @@ class MultiClassClassifierAugmentation:
             if steps_per_epoch:
                 history = self.model.fit(self.train_generator,
                                          epochs=epochs,
-                                         steps_per_epoch=100,
+                                         steps_per_epoch=self.train_length // self.batch_size,
                                          verbose=verbose,
                                          validation_data=self.validation_generator,
                                          callbacks=[ModelCheckpoint('./models/multiclass_augmentation_' + str(self.input_size) + '_' + architecture_ver + '_spe_save.h5',
@@ -92,7 +100,7 @@ class MultiClassClassifierAugmentation:
                                                     EarlyStopping(
                                                         monitor='val_loss',
                                                         mode='min',
-                                                        patience=6,
+                                                        patience=5,
                                                         min_delta=0.005,
                                                         verbose=1)
                                                     ])
@@ -109,11 +117,11 @@ class MultiClassClassifierAugmentation:
                                                     EarlyStopping(
                                                         monitor='val_loss',
                                                         mode='min',
-                                                        patience=6,
+                                                        patience=5,
                                                         min_delta=0.005,
                                                         verbose=1)
                                                     ])
         return history
 
     def evaluate(self):
-        print('Model score:', self.model.evaluate(self.validation_generator))
+        return self.model.evaluate(self.validation_generator)

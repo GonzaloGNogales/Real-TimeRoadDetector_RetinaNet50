@@ -26,35 +26,35 @@ if __name__ == '__main__':
     elif args.dnn == 'MCA':
         dnn = MultiClassClassifierAugmentation()
         model_ver = 'v1'
-    elif args.dnn == 'MCA-v1-150x150_input_size':
+    elif args.dnn == 'MCA-v1-150x150':
         dnn = MultiClassClassifierAugmentation(i_size=(150, 150))
         model_ver = 'v1'
         spe = False
-    elif args.dnn == 'MCA-v1-150x150_input_size-spe':
+    elif args.dnn == 'MCA-v1-150x150-spe':
         dnn = MultiClassClassifierAugmentation(i_size=(150, 150))
         model_ver = 'v1'
         spe = True
-    elif args.dnn == 'MCA-v1-224x224_input_size':
+    elif args.dnn == 'MCA-v1-224x224':
         dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
         model_ver = 'v1'
         spe = False
-    elif args.dnn == 'MCA-v1-224x224_input_size-spe':
+    elif args.dnn == 'MCA-v1-224x224-spe':
         dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
         model_ver = 'v1'
         spe = True
-    elif args.dnn == 'MCA-v2-150x150_input_size':
+    elif args.dnn == 'MCA-v2-150x150':
         dnn = MultiClassClassifierAugmentation(i_size=(150, 150))
         model_ver = 'v2'
         spe = False
-    elif args.dnn == 'MCA-v2-150x150_input_size-spe':
+    elif args.dnn == 'MCA-v2-150x150-spe':
         dnn = MultiClassClassifierAugmentation(i_size=(150, 150))
         model_ver = 'v2'
         spe = True
-    elif args.dnn == 'MCA-v2-224x224_input_size':
+    elif args.dnn == 'MCA-v2-224x224':
         dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
         model_ver = 'v2'
         spe = False
-    elif args.dnn == 'MCA-v2-224x224_input_size-spe':
+    elif args.dnn == 'MCA-v2-224x224-spe':
         dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
         model_ver = 'v2'
         spe = True
@@ -74,8 +74,8 @@ if __name__ == '__main__':
         # Train the DNN
         h = dnn.train(epochs=50, steps_per_epoch=spe, architecture_ver=model_ver)
 
-        # Plot metrics from training when finished
-        plot_metrics_legend(history=h, case=args.dnn)
-
         # Evaluate the model to get the loss value and the metrics values of the model in validation
-        dnn.evaluate()
+        loss, accuracy = dnn.evaluate()
+
+        # Plot metrics from training when finished
+        plot_metrics_legend(h, args.dnn, loss, accuracy)
