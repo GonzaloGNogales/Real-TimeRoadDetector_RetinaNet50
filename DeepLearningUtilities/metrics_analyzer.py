@@ -49,11 +49,11 @@ def plot_metrics_legend(history, case):
         plt.plot(epochs, val_accuracy, 'b', label='Validation accuracy')
         plt.title('Training and validation accuracy')
         plt.legend()
-        accuracy_plot.savefig('./metrics/' + case + '/' + 'Trainig and Validation Accuracy MultiClassClassifier No Augmentation.png')
+        accuracy_plot.savefig('./metrics/' + case + '/' + 'Train and Validation Accuracy MultiClassClassifier.png')
 
         loss_plot = plt.figure()
         plt.plot(epochs, loss, 'r', label='Training Loss')
         plt.plot(epochs, val_loss, 'b', label='Validation Loss')
         plt.title('Training and validation loss')
         plt.legend()
-        loss_plot.savefig('./metrics/' + case + '/' + 'Trainig and Validation Loss MultiClassClassifier No Augmentation.png')
+        loss_plot.savefig('./metrics/' + case + '/' + 'Train and Validation Loss MultiClassClassifier.png')
