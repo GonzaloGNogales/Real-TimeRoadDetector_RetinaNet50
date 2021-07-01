@@ -100,6 +100,7 @@ class MultiClassClassifierVGG16:
                                                                 monitor='val_loss',
                                                                 mode='min',
                                                                 save_best_only=True,
+                                                                save_weights_only=True,
                                                                 verbose=1),
                                                 EarlyStopping(
                                                     monitor='val_loss',
