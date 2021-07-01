@@ -80,7 +80,7 @@ if __name__ == '__main__':
         if model_ver is not None:
             h = dnn.train(epochs=50, steps_per_epoch=spe, architecture_ver=model_ver)
         else:
-            h = dnn.train(epochs=20)
+            h = dnn.train(epochs=500)
 
         # Evaluate the model to get the loss value and the metrics values of the model in validation
         loss, accuracy = dnn.evaluate()
