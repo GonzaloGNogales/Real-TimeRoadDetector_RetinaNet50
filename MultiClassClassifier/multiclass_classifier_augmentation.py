@@ -42,7 +42,7 @@ class MultiClassClassifierAugmentation:
                                                                                   class_mode='categorical',
                                                                                   target_size=self.input_size)
 
-    def define_model_architecture_v1(self, num_classes=9, opt=Adam(learning_rate=0.001)):
+    def define_model_architecture_v1(self, num_classes=9, opt=Adam(learning_rate=0.0001)):
         self.input_size += (3,)
         print('Model input size:', self.input_size)
         self.model = tf.keras.models.Sequential([

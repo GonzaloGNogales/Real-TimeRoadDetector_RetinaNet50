@@ -2,6 +2,7 @@ import argparse
 from MultiClassClassifier.multiclass_classifier_no_augmentation import *
 from MultiClassClassifier.multiclass_classifier_augmentation import *
 from MultiClassClassifier.multiclass_classifier_VGG16based_model import *
+from MultiClassClassifier.multiclass_classifier_Inceptionv3_transferlearning import *
 from DeepLearningUtilities.metrics_analyzer import *
 
 if __name__ == '__main__':
@@ -61,6 +62,8 @@ if __name__ == '__main__':
         spe = True
     elif args.dnn == 'VGG16':
         dnn = MultiClassClassifierVGG16(num_classes=9)
+    elif args.dnn == 'InceptionV3_TL':
+        dnn = MultiClassClassifierInceptionV3TransferLearning()
     else:
         raise ValueError('Wrong DNN type :(')
 
@@ -80,7 +83,7 @@ if __name__ == '__main__':
         if model_ver is not None:
             h = dnn.train(epochs=50, steps_per_epoch=spe, architecture_ver=model_ver)
         else:
-            h = dnn.train(epochs=500)
+            h = dnn.train()
 
         # Evaluate the model to get the loss value and the metrics values of the model in validation
         loss, accuracy = dnn.evaluate()

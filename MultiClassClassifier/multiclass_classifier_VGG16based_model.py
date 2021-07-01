@@ -86,10 +86,10 @@ class MultiClassClassifierVGG16:
                                                                                   class_mode='categorical',
                                                                                   target_size=self.input_size)
 
-    def compile_model(self, opt=Adam(learning_rate=0.001)):
+    def compile_model(self, opt=Adam(learning_rate=0.0001)):
         self.model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
-    def train(self, epochs=10, verbose=1):
+    def train(self, epochs=500, verbose=1):
         history = None
         if self.model is not None and self.train_generator is not None and self.validation_generator is not None:
             history = self.model.fit(self.train_generator,
