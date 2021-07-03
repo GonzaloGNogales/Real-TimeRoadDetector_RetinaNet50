@@ -65,6 +65,15 @@ class MultiClassClassifierVGG16:
         self.train_generator = None
         self.validation_generator = None
         self.model = CustomVGG(num_classes)
+
+        t_len = 0
+        for d in os.listdir(t_path):
+            t_len += len(os.listdir(t_path + '/' + d))
+        self.train_length = t_len
+        v_len = 0
+        for v in os.listdir(v_path):
+            v_len += len(os.listdir(v_path + '/' + v))
+        self.val_length = v_len
         self.batch_size = b_size
 
     def set_up_data_generator(self):
@@ -94,9 +103,11 @@ class MultiClassClassifierVGG16:
         if self.model is not None and self.train_generator is not None and self.validation_generator is not None:
             history = self.model.fit(self.train_generator,
                                      epochs=epochs,
+                                     steps_per_epoch=self.train_length // self.batch_size,
                                      verbose=verbose,
                                      validation_data=self.validation_generator,
-                                     callbacks=[ModelCheckpoint('./models/multiclass_vgg16_save.h5',
+                                     validation_steps=self.val_length // self.batch_size,
+                                     callbacks=[ModelCheckpoint('./models2/multiclass_vgg16_save.h5',
                                                                 monitor='val_loss',
                                                                 mode='min',
                                                                 save_best_only=True,
@@ -105,8 +116,8 @@ class MultiClassClassifierVGG16:
                                                 EarlyStopping(
                                                     monitor='val_loss',
                                                     mode='min',
-                                                    patience=5,
-                                                    min_delta=0.005,
+                                                    patience=10,
+                                                    min_delta=0.0005,
                                                     verbose=1)
                                                 ])
         return history
@@ -114,3 +125,5 @@ class MultiClassClassifierVGG16:
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
 
+    def set_weights(self, weights_file):
+        self.model.set_weights(weights_file)

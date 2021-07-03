@@ -21,6 +21,10 @@ class MultiClassClassifierNoAugmentation:
         for d in os.listdir(t_path):
             t_len += len(os.listdir(t_path + '/' + d))
         self.train_length = t_len
+        v_len = 0
+        for v in os.listdir(v_path):
+            v_len += len(os.listdir(v_path + '/' + v))
+        self.val_length = v_len
         self.batch_size = b_size
 
     def set_up_data_generator(self):
@@ -36,7 +40,7 @@ class MultiClassClassifierNoAugmentation:
                                                                                   class_mode='categorical',
                                                                                   target_size=self.input_size)
 
-    def define_model_architecture_v1(self, num_classes=9, opt=Adam(learning_rate=0.001)):
+    def define_model_architecture_v1(self, num_classes=9, opt=Adam(learning_rate=0.0001)):
         self.input_size += (3,)
         print('Model input size:', self.input_size)
         self.model = tf.keras.models.Sequential([
@@ -61,7 +65,7 @@ class MultiClassClassifierNoAugmentation:
                                          epochs=epochs,
                                          verbose=verbose,
                                          validation_data=self.validation_generator,
-                                         callbacks=[ModelCheckpoint('./models/multiclass_no_augmentation_' + str(self.input_size) + '_' + architecture_ver + '_save.h5',
+                                         callbacks=[ModelCheckpoint('./models2/multiclass_no_augmentation_' + str(self.input_size) + '_' + architecture_ver + '_save.h5',
                                                                     monitor='val_loss',
                                                                     mode='min',
                                                                     save_best_only=True,
@@ -79,7 +83,8 @@ class MultiClassClassifierNoAugmentation:
                                          steps_per_epoch=self.train_length // self.batch_size,
                                          verbose=verbose,
                                          validation_data=self.validation_generator,
-                                         callbacks=[ModelCheckpoint('./models/multiclass_no_augmentation_' + str(self.input_size) + '_' + architecture_ver + '_spe_save.h5',
+                                         validation_steps=self.val_length // self.batch_size,
+                                         callbacks=[ModelCheckpoint('./models2/multiclass_no_augmentation_' + str(self.input_size) + '_' + architecture_ver + '_spe_save.h5',
                                                                     monitor='val_loss',
                                                                     mode='min',
                                                                     save_best_only=True,
@@ -87,8 +92,8 @@ class MultiClassClassifierNoAugmentation:
                                                     EarlyStopping(
                                                         monitor='val_loss',
                                                         mode='min',
-                                                        patience=5,
-                                                        min_delta=0.005,
+                                                        patience=10,
+                                                        min_delta=0.0005,
                                                         verbose=1)
                                                     ])
         return history
