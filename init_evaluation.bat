@@ -1,0 +1,11 @@
+python main.py --dnn MCNA --load_model YES
+python main.py --dnn MCA-v1-150x150 --load_model YES
+python main.py --dnn MCA-v1-150x150-spe --load_model YES
+python main.py --dnn MCA-v1-224x224 --load_model YES
+python main.py --dnn MCA-v1-224x224-spe --load_model YES
+python main.py --dnn MCA-v2-150x150 --load_model YES
+python main.py --dnn MCA-v2-150x150-spe --load_model YES
+python main.py --dnn MCA-v2-224x224 --load_model YES
+python main.py --dnn MCA-v2-224x224-spe --load_model YES
+python main.py --dnn VGG16 --load_model YES
+python main.py --dnn InceptionV3_TL --load_model YES

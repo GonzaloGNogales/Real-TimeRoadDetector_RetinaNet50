@@ -64,7 +64,7 @@ class MultiClassClassifierAugmentation:
 
         self.model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
-    def define_model_architecture_v2(self, num_classes=9, opt=Adam(learning_rate=0.001)):
+    def define_model_architecture_v2(self, num_classes=9, opt=Adam(learning_rate=0.0001)):
         self.input_size += (3,)
         print('Model input size:', self.input_size)
         self.model = tf.keras.models.Sequential([
@@ -96,7 +96,7 @@ class MultiClassClassifierAugmentation:
                                          steps_per_epoch=self.train_length // self.batch_size,
                                          verbose=verbose,
                                          validation_data=self.validation_generator,
-                                         validation_steps=self.val_length // self.batch_size,
+                                         # validation_steps=self.val_length // self.batch_size,
                                          callbacks=[ModelCheckpoint('./models2/multiclass_augmentation_' + str(self.input_size) + '_' + architecture_ver + '_spe_save.h5',
                                                                     monitor='val_loss',
                                                                     mode='min',
@@ -130,3 +130,13 @@ class MultiClassClassifierAugmentation:
 
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
+
+    def load_model(self, spe=False, av='v1'):
+        self.input_size += (3,)
+        if spe:
+            self.model = tf.keras.models.load_model('./models2/multiclass_augmentation_' + str(self.input_size) + '_' + av + '_spe_save.h5')
+        else:
+            self.model = tf.keras.models.load_model('./models2/multiclass_augmentation_' + str(self.input_size) + '_' + av + '_save.h5')
+
+    def predict(self, path):
+        return self.model.predict(path)

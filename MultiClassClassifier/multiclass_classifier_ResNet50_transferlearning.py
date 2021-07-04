@@ -1,18 +1,14 @@
 import os
 import tensorflow as tf
-from keras.models import model_from_json
-from tensorflow.keras import layers
 from tensorflow.keras import Model
-from tensorflow.keras.applications.inception_v3 import InceptionV3
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
 
 
-class MultiClassClassifierInceptionV3TransferLearning:
+class MultiClassClassifierResNet50TransferLearning:
     def __init__(self, t_path='./dataset/train',
                  v_path='./dataset/validation',
-                 i_size=(150, 150),
+                 i_size=(224, 224),
                  b_size=20):
         self.train_path = t_path
         self.val_path = v_path
@@ -51,26 +47,20 @@ class MultiClassClassifierInceptionV3TransferLearning:
                                                                                   class_mode='categorical',
                                                                                   target_size=self.input_size)
 
-    def compile_model(self, num_classes=9, opt=Adam(learning_rate=0.0001)):
-        pre_trained_model = InceptionV3(input_shape=(150, 150, 3),
-                                        include_top=False,
-                                        weights=None)
+    def compile_model(self, num_classes=9, opt='SGD'):
+        self.input_size += (3,)
+        inputs = tf.keras.layers.Input(self.input_size)
+        feature_extractor = tf.keras.applications.resnet.ResNet50(input_shape=(224, 224, 3),
+                                                                  include_top=False,
+                                                                  weights='imagenet')(inputs)
 
-        pre_trained_model.load_weights(self.local_weights_file)
+        x = tf.keras.layers.GlobalAveragePooling2D()(feature_extractor)
+        x = tf.keras.layers.Flatten()(x)
+        x = tf.keras.layers.Dense(1024, activation="relu")(x)
+        x = tf.keras.layers.Dense(512, activation="relu")(x)
+        final_classification = tf.keras.layers.Dense(num_classes, activation="softmax", name="classification")(x)
 
-        for layer in pre_trained_model.layers:
-            layer.trainable = False
-
-        last_layer = pre_trained_model.get_layer('mixed7')
-        print('last layer output shape: ', last_layer.output_shape)
-        last_output = last_layer.output
-
-        x = layers.Flatten()(last_output)
-        x = layers.Dense(1024, activation='relu')(x)
-        x = layers.Dropout(0.2)(x)
-        x = layers.Dense(num_classes, activation='softmax')(x)
-
-        self.model = Model(pre_trained_model.input, x)
+        self.model = Model(inputs=inputs, outputs=final_classification)
 
         self.model.compile(optimizer=opt,
                            loss='categorical_crossentropy',
@@ -86,7 +76,7 @@ class MultiClassClassifierInceptionV3TransferLearning:
                                      validation_data=self.validation_generator,
                                      validation_steps=self.val_length // self.batch_size,
                                      callbacks=[
-                                         ModelCheckpoint('./models2/multiclass_transferlearning_inceptionv3_save.h5',
+                                         ModelCheckpoint('./models2/multiclass_transferlearning_resnet50_save.h5',
                                                          monitor='val_loss',
                                                          mode='min',
                                                          save_best_only=True,
@@ -94,17 +84,18 @@ class MultiClassClassifierInceptionV3TransferLearning:
                                          EarlyStopping(
                                              monitor='val_loss',
                                              mode='min',
-                                             patience=4,
-                                             min_delta=0.0005,
+                                             patience=2,
+                                             min_delta=0.005,
                                              verbose=1)
                                          ])
+
         return history
 
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
 
     def load_model(self):
-        self.model = tf.keras.models.load_model('./models2/multiclass_transferlearning_inceptionv3_save.h5')
+        self.model = tf.keras.models.load_model('./models2/multiclass_transferlearning_resnet50_save.h5')
 
     def predict(self, path):
         return self.model.predict(path)

@@ -100,3 +100,13 @@ class MultiClassClassifierNoAugmentation:
 
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
+
+    def load_model(self, spe=False, av='v1'):
+        self.input_size += (3,)
+        if spe:
+            self.model = tf.keras.models.load_model('./models2/multiclass_no_augmentation_' + str(self.input_size) + '_' + av + '_spe_save.h5')
+        else:
+            self.model = tf.keras.models.load_model('./models2/multiclass_no_augmentation_' + str(self.input_size) + '_' + av + '_save.h5')
+
+    def predict(self, path):
+        return self.model.predict(path)
