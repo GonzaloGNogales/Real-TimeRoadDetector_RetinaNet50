@@ -86,7 +86,7 @@ class MultiClassClassifierInceptionV3TransferLearning:
                                      validation_data=self.validation_generator,
                                      validation_steps=self.val_length // self.batch_size,
                                      callbacks=[
-                                         ModelCheckpoint('./models2/multiclass_transferlearning_inceptionv3_save.h5',
+                                         ModelCheckpoint('./models_TL/multiclass_transferlearning_inceptionv3_save.h5',
                                                          monitor='val_loss',
                                                          mode='min',
                                                          save_best_only=True,
@@ -94,7 +94,7 @@ class MultiClassClassifierInceptionV3TransferLearning:
                                          EarlyStopping(
                                              monitor='val_loss',
                                              mode='min',
-                                             patience=4,
+                                             patience=10,
                                              min_delta=0.0005,
                                              verbose=1)
                                          ])
@@ -104,7 +104,7 @@ class MultiClassClassifierInceptionV3TransferLearning:
         return self.model.evaluate(self.validation_generator)
 
     def load_model(self):
-        self.model = tf.keras.models.load_model('./models2/multiclass_transferlearning_inceptionv3_save.h5')
+        self.model = tf.keras.models.load_model('./models_TL/multiclass_transferlearning_inceptionv3_save.h5')
 
     def predict(self, path):
         return self.model.predict(path)

@@ -28,52 +28,65 @@ if __name__ == '__main__':
     dnn = None
     model_ver = None
     spe = True
+    i_size = None
 
     # Instantiate a custom DNN to train
     if args.dnn == 'MCNA':
+        i_size = (150, 150)
         dnn = MultiClassClassifierNoAugmentation()  # Instantiate HERE
         model_ver = 'v1'
     elif args.dnn == 'MCA':
         dnn = MultiClassClassifierAugmentation()
         model_ver = 'v1'
     elif args.dnn == 'MCA-v1-150x150':
-        dnn = MultiClassClassifierAugmentation(i_size=(150, 150))
+        i_size = (150, 150)
+        dnn = MultiClassClassifierAugmentation(i_size=i_size)
         model_ver = 'v1'
         spe = False
     elif args.dnn == 'MCA-v1-150x150-spe':
-        dnn = MultiClassClassifierAugmentation(i_size=(150, 150))
+        i_size = (150, 150)
+        dnn = MultiClassClassifierAugmentation(i_size=i_size)
         model_ver = 'v1'
         spe = True
     elif args.dnn == 'MCA-v1-224x224':
-        dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
+        i_size = (224, 224)
+        dnn = MultiClassClassifierAugmentation(i_size=i_size)
         model_ver = 'v1'
         spe = False
     elif args.dnn == 'MCA-v1-224x224-spe':
-        dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
+        i_size = (224, 224)
+        dnn = MultiClassClassifierAugmentation(i_size=i_size)
         model_ver = 'v1'
         spe = True
     elif args.dnn == 'MCA-v2-150x150':
-        dnn = MultiClassClassifierAugmentation(i_size=(150, 150))
+        i_size = (150, 150)
+        dnn = MultiClassClassifierAugmentation(i_size=i_size)
         model_ver = 'v2'
         spe = False
     elif args.dnn == 'MCA-v2-150x150-spe':
-        dnn = MultiClassClassifierAugmentation(i_size=(150, 150))
+        i_size = (150, 150)
+        dnn = MultiClassClassifierAugmentation(i_size=i_size)
         model_ver = 'v2'
         spe = True
     elif args.dnn == 'MCA-v2-224x224':
-        dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
+        i_size = (224, 224)
+        dnn = MultiClassClassifierAugmentation(i_size=i_size)
         model_ver = 'v2'
         spe = False
     elif args.dnn == 'MCA-v2-224x224-spe':
-        dnn = MultiClassClassifierAugmentation(i_size=(224, 224))
+        i_size = (224, 224)
+        dnn = MultiClassClassifierAugmentation(i_size=i_size)
         model_ver = 'v2'
         spe = True
     elif args.dnn == 'VGG16':
+        i_size = (224, 224)
         dnn = MultiClassClassifierVGG16(num_classes=9)
     elif args.dnn == 'InceptionV3_TL':
         dnn = MultiClassClassifierInceptionV3TransferLearning()
+        i_size = (150, 150)
     elif args.dnn == 'ResNet50_TL':
         dnn = MultiClassClassifierResNet50TransferLearning()
+        i_size = (224, 224)
     else:
         raise ValueError('Wrong DNN type :(')
 
@@ -118,4 +131,4 @@ if __name__ == '__main__':
                 file.close()
 
         if args.sliding_windows == 'YES':
-            sliding_windows(dnn, input_size=(224, 224))
+            sliding_windows(args.dnn, dnn, input_size=i_size)

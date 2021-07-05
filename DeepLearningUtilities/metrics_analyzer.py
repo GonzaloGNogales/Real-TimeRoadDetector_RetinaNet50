@@ -34,8 +34,8 @@ def plot_metrics_no_legend(history):
 
 def plot_metrics_legend(history, case, v_loss, v_acc):
     if history is not None:
-        if not os.path.isdir('./metrics2/' + case):
-            os.mkdir('./metrics2/' + case)
+        if not os.path.isdir('./metrics_TL/' + case):
+            os.mkdir('./metrics_TL/' + case)
 
         accuracy = history.history['accuracy']
         val_accuracy = history.history['val_accuracy']
@@ -53,7 +53,7 @@ def plot_metrics_legend(history, case, v_loss, v_acc):
                     horizontalalignment='right',
                     verticalalignment='center', bbox=props)
         plt.legend()
-        plt.savefig('./metrics2/' + case + '/' + 'Train and Validation Accuracy MultiClassClassifier.png')
+        plt.savefig('./metrics_TL/' + case + '/' + 'Train and Validation Accuracy MultiClassClassifier.png')
 
         loss_plot, ax_loss = plt.subplots()
         plt.plot(epochs, loss, 'r', label='Training Loss')
@@ -64,4 +64,4 @@ def plot_metrics_legend(history, case, v_loss, v_acc):
                      horizontalalignment='right',
                      verticalalignment='center', bbox=props)
         plt.legend()
-        plt.savefig('./metrics2/' + case + '/' + 'Train and Validation Loss MultiClassClassifier.png')
+        plt.savefig('./metrics_TL/' + case + '/' + 'Train and Validation Loss MultiClassClassifier.png')

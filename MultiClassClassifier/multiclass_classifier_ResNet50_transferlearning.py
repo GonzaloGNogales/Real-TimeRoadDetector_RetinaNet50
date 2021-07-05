@@ -16,7 +16,6 @@ class MultiClassClassifierResNet50TransferLearning:
         self.train_generator = None
         self.validation_generator = None
         self.model = None
-        self.local_weights_file = './inceptionv3_weights/inception_v3_weights_tf_dim_ordering_tf_kernels_notop.h5'
 
         t_len = 0
         for d in os.listdir(t_path):
@@ -76,26 +75,37 @@ class MultiClassClassifierResNet50TransferLearning:
                                      validation_data=self.validation_generator,
                                      validation_steps=self.val_length // self.batch_size,
                                      callbacks=[
-                                         ModelCheckpoint('./models2/multiclass_transferlearning_resnet50_save.h5',
+                                         ModelCheckpoint('./models_TL/multiclass_transferlearning_resnet50_saveweights.h5',
                                                          monitor='val_loss',
                                                          mode='min',
                                                          save_best_only=True,
+                                                         save_weights_only=True,
                                                          verbose=1),
                                          EarlyStopping(
                                              monitor='val_loss',
                                              mode='min',
-                                             patience=2,
-                                             min_delta=0.005,
+                                             patience=10,
+                                             min_delta=0.0005,
                                              verbose=1)
                                          ])
+
+        model_json_architecture = self.model.to_json()
+        with open('./models_TL/multiclass_transferlearning_resnet50.json', 'w') as json_file:
+            json_file.write(model_json_architecture)
 
         return history
 
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
 
+    def load_model_111(self):
+        self.model = tf.keras.models.load_model('./models_TL/multiclass_transferlearning_resnet50_save.h5')
+
     def load_model(self):
-        self.model = tf.keras.models.load_model('./models2/multiclass_transferlearning_resnet50_save.h5')
+        with open('./models_TL/multiclass_transferlearning_resnet50.json', 'r') as json_file:
+            json_loaded_model = json_file.read()
+        self.model = tf.keras.models.model_from_json(json_loaded_model)
+        self.model.load_weights('./models_TL/multiclass_transferlearning_resnet50_saveweights.h5')
 
     def predict(self, path):
         return self.model.predict(path)

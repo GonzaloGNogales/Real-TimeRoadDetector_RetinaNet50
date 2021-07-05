@@ -17,6 +17,8 @@ class DataPreprocessing:
         self.none_class_path = 'D:\\DatasetTFG\\train\\none2'
         self.dataset_origin = 'D:\DatasetTFG\dataset2'
         self.dataset_dest = 'D:\DatasetTFG\dataset'
+        self.training = 'D:\\DatasetTFG\\dataset\\train\\none'
+        self.validation = 'D:\\DatasetTFG\\dataset\\validation\\none'
 
     def dataset_preparation(self):
         if not os.path.isdir('D:\\DatasetTFG\\cropped_train'):
@@ -110,34 +112,25 @@ class DataPreprocessing:
                     print(actual_images[i][:-4], 'was correctly saved into', c)
                     class_indexes[c] += 1
 
+    def reformat_none_class(self):
+        # 6000 none to training and 2000 none to validation
+        target_train = 6000
+        target_validation = 2000
+
+        # Build up a new none dataset batch for training from taking random images from source none
+        for t in range(target_train):
+            random_file = random.choice(os.listdir(self.training))
+            print(random_file)
+            img = cv2.imread(self.training + '/' + random_file)
+            cv2.imwrite(os.path.join('D:\\DatasetTFG\\nonet' + '/' + random_file), img)
+
+        for v in range(target_validation):
+            random_file = random.choice(os.listdir(self.validation))
+            print(random_file)
+            img = cv2.imread(self.validation + '/' + random_file)
+            cv2.imwrite(os.path.join('D:\\DatasetTFG\\nonev' + '/' + random_file), img)
+
 
 if __name__ == '__main__':
     dataset_preprocessor = DataPreprocessing()
-    # dataset_preprocessor.dataset_set_up()
-
-
-# zip_data_path = "../dataframe.zip"
-# zip_ref = zipfile.ZipFile(zip_data_path, 'r')
-# os.mkdir("./data_management_tmp")
-# zip_ref.extractall('./data_management_tmp')
-# zip_ref.close()
-#
-# print("Number of car images:", len(os.listdir('./data_management_tmp/RoadImages/Cars/')))
-# print("Number of truck images:", len(os.listdir('./data_management_tmp/RoadImages/Trucks/')))
-# print("Number of motorbike images:", len(os.listdir('./data_management_tmp/RoadImages/Motorbikes/')))
-# print("Number of crosswalk images:", len(os.listdir('./data_management_tmp/RoadImages/Crosswalks/')))
-#
-# try:
-#     os.mkdir("./RoadClassifier")
-#     os.mkdir("./RoadClassifier/training")
-#     os.mkdir("./RoadClassifier/validation")
-#     os.mkdir("./RoadClassifier/training/cars")
-#     os.mkdir("./RoadClassifier/training/trucks")
-#     os.mkdir("./RoadClassifier/training/motorbikes")
-#     os.mkdir("./RoadClassifier/training/crosswalks")
-#     os.mkdir("./RoadClassifier/validation/cars")
-#     os.mkdir("./RoadClassifier/validation/trucks")
-#     os.mkdir("./RoadClassifier/validation/motorbikes")
-#     os.mkdir("./RoadClassifier/validation/crosswalks")
-# except OSError:
-#     pass
+    dataset_preprocessor.reformat_none_class()
