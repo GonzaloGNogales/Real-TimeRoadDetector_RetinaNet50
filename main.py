@@ -126,7 +126,7 @@ if __name__ == '__main__':
                 loss, accuracy = dnn.evaluate()
 
                 # Code to save the evaluation results on a txt file
-                file = open("evaluation_2.txt", "a")
+                file = open("evaluation_TL.txt", "a")
                 file.write('[' + str(args.dnn) + '] -> Loss: ' + str(loss) + ' | Accuracy: ' + str(accuracy) + '\n')
                 file.close()
 

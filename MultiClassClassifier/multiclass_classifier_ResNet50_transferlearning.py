@@ -96,6 +96,9 @@ class MultiClassClassifierResNet50TransferLearning:
         return history
 
     def evaluate(self):
+        self.model.compile(optimizer='SGD',
+                           loss='categorical_crossentropy',
+                           metrics=['accuracy'])
         return self.model.evaluate(self.validation_generator)
 
     def load_model_111(self):
