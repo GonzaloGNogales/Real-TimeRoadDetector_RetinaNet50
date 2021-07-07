@@ -5,6 +5,7 @@ from MultiClassClassifier.multiclass_classifier_VGG16based_model import *
 from MultiClassClassifier.multiclass_classifier_Inceptionv3_transferlearning import *
 from MultiClassClassifier.multiclass_classifier_ResNet50_transferlearning import *
 from DeepLearningUtilities.metrics_analyzer import *
+from DeepLearningUtilities.progress_bar import *
 from SlidingWindowsAlgorithm.sliding_windows import *
 
 if __name__ == '__main__':
@@ -19,6 +20,8 @@ if __name__ == '__main__':
         '--dnn', type=str, default='MCNA', help='String referring to the neural network selection')
     parser.add_argument(
         '--load_model', type=str, default='NO', help='String that indicates if we want to load a model instead of training it')
+    parser.add_argument(
+        '--sliding_windows_test', type=str, default='NO', help='String that indicates if we want to execute sliding windows algorithm with te selected dnn in test mode')
     parser.add_argument(
         '--sliding_windows', type=str, default='NO', help='String that indicates if we want to execute sliding windows algorithm with te selected dnn')
     parser.add_argument(
@@ -131,4 +134,54 @@ if __name__ == '__main__':
                 file.close()
 
         if args.sliding_windows == 'YES':
-            sliding_windows(args.dnn, dnn, input_size=i_size)
+            # Prepare the video testing directory
+            test_dir = './test_video/'
+            if os.path.isdir(test_dir):
+                shutil.rmtree(test_dir)
+            os.mkdir(test_dir)
+            print('test_video directory ready for processing')
+
+            # Start capturing the video and save the frames with jpg format into the test_video directory
+            video = cv2.VideoCapture('video_input.mp4')
+            print('Processing video frames! wait few minutes...')
+            success, image = video.read()
+            count = 0
+            while success:
+                cv2.imwrite(test_dir + '%d.jpg' % count, image)  # save frame as JPEG file
+                success, image = video.read()
+                count += 1
+            print('Finished processing video frames!')
+
+            # detector.preprocess_data('./test_video/', False)  sliding windows on ./test_video/
+            directory = sliding_windows(args.dnn, dnn, i_size, test_dir)
+
+            final_video_array = list()
+            it = 0
+            total = len(os.listdir(directory))
+            if total != 0:
+                progress_bar(it, total, prefix='Loading video frames: ', suffix='Complete', length=50)
+            for frame in os.listdir(directory):
+                it += 1
+                progress_bar(it, total, prefix='Loading video frames: ', suffix='Complete', length=50)
+                if os.path.isfile(directory + frame) and frame.endswith('.jpg'):
+                    f = cv2.imread(directory + frame)
+                    final_video_array.append((f, frame))
+            h, w, _ = final_video_array[0][0].shape
+            size = (w, h)
+            output_video = cv2.VideoWriter(directory + 'detected_video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
+
+            # Progress bar for giving feedback to the users
+            final_video_array.sort(key=lambda tup: int(tup[1][:-4]))
+            it = 0
+            total = len(final_video_array)
+            if total != 0:
+                progress_bar(it, total, prefix='Video mounting progress: ', suffix='Complete', length=50)
+            for i in range(len(final_video_array)):
+                it += 1
+                progress_bar(it, total, prefix='Video mounting progress: ', suffix='Complete', length=50)
+                output_video.write(final_video_array[i][0])
+            output_video.release()
+            print('The video is finished! See the results playing the file: detected_video.avi')
+        elif args.sliding_windows_test == 'YES':
+            test_dir = './images_sw/'
+            sliding_windows(args.dnn, dnn, i_size, test_dir)

@@ -128,7 +128,7 @@ class MultiClassClassifierVGG16:
     def load_model_weights(self):
         self.compile_model()
         self.model.evaluate(self.validation_generator)
-        self.model.load_weights('./models2/multiclass_vgg16_save.h5')
+        self.model.load_weights('./first_results/first_models/models2/multiclass_vgg16_save.h5')
 
     def predict(self, path):
         return self.model.predict(path)

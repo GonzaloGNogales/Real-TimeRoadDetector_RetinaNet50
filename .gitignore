@@ -1,5 +1,12 @@
 dataset/
-models/
-models2/
+dataset_realtime/
+first_results/
 inceptionv3_weights/
+last_results/
 models_TL/
+test_video/
+sliding_windows_result/
+images_sw/
+last_results/
+detected_video.avi
+video_input.mp4
