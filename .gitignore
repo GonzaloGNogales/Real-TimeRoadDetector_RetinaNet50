@@ -10,3 +10,5 @@ images_sw/
 last_results/
 detected_video.avi
 video_input.mp4
+video_input_1.mp4
+RealTimeMultiLabelClassifier/checkpoints/

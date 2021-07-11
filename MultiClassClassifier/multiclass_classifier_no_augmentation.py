@@ -27,7 +27,7 @@ class MultiClassClassifierNoAugmentation:
         self.val_length = v_len
         self.batch_size = b_size
 
-    def set_up_data_generator(self):
+    def set_up_data(self):
         train_data_generator = ImageDataGenerator(rescale=1. / 255.)
         self.train_generator = train_data_generator.flow_from_directory(self.train_path,
                                                                         batch_size=self.batch_size,

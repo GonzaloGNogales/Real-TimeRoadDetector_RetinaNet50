@@ -27,7 +27,7 @@ class MultiClassClassifierAugmentation:
         self.val_length = v_len
         self.batch_size = b_size
 
-    def set_up_data_generator(self):
+    def set_up_data(self):
         train_data_generator = ImageDataGenerator(rescale=1. / 255.,
                                                   rotation_range=30,
                                                   shear_range=0.2,

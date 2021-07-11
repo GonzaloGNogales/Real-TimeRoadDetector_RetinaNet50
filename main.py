@@ -96,7 +96,7 @@ if __name__ == '__main__':
     if dnn is not None:
 
         # Set up data generator for pre processing the images and fixing batch size
-        dnn.set_up_data_generator()
+        dnn.set_up_data()
 
         if args.load_model != 'YES':  # Training case
             # Model architecture definition and compilation
@@ -111,25 +111,25 @@ if __name__ == '__main__':
             if model_ver is not None:
                 h = dnn.train(epochs=100, steps_per_epoch=spe, architecture_ver=model_ver)
             else:
-                h = dnn.train(epochs=100)
+                h = dnn.train(epochs=2)
 
             # Evaluate the model to get the loss value and the metrics values of the model in validation
             loss, accuracy = dnn.evaluate()
 
             # Plot metrics from training when finished
             plot_metrics_legend(h, args.dnn, loss, accuracy)
+
         elif args.load_model == 'YES':  # Evaluation case
-            if args.dnn == 'VGG16':
-                dnn.load_model_weights()
-            elif args.dnn == 'InceptionV3_TL' or args.dnn == 'ResNet50_TL':
+            if args.dnn == 'VGG16' or args.dnn == 'InceptionV3_TL' or args.dnn == 'ResNet50_TL':
                 dnn.load_model()
             else:
                 dnn.load_model(spe=spe, av=model_ver)
+
             if args.sliding_windows != 'YES':
                 loss, accuracy = dnn.evaluate()
 
-                # Code to save the evaluation results on a txt file
-                file = open("evaluation_TL.txt", "a")
+                # Code to save the evaluation results on a txt file inside evaluations directory
+                file = open('./evaluations/evaluation_' + args.dnn + '.txt', 'a')
                 file.write('[' + str(args.dnn) + '] -> Loss: ' + str(loss) + ' | Accuracy: ' + str(accuracy) + '\n')
                 file.close()
 
@@ -182,6 +182,7 @@ if __name__ == '__main__':
                 output_video.write(final_video_array[i][0])
             output_video.release()
             print('The video is finished! See the results playing the file: detected_video.avi')
+
         elif args.sliding_windows_test == 'YES':
             test_dir = './images_sw/'
             sliding_windows(args.dnn, dnn, i_size, test_dir)

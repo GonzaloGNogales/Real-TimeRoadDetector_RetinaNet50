@@ -17,7 +17,7 @@ class VGGBlock(tf.keras.Model):
 
         self.max_pool = tf.keras.layers.MaxPooling2D((pool_size, pool_size), (strides, strides))
 
-    def call(self, inputs):
+    def call(self, inputs, training=None, mask=None):
         conv2D_0 = self.conv2D_0
         x = conv2D_0(inputs)
 
@@ -41,7 +41,7 @@ class CustomVGG(tf.keras.Model):
         self.fc = tf.keras.layers.Dense(256, activation='relu')
         self.classifier = tf.keras.layers.Dense(num_classes, activation='softmax')
 
-    def call(self, inputs):
+    def call(self, inputs, training=None, mask=None):
         x = self.block_a(inputs)
         x = self.block_b(x)
         x = self.block_c(x)
@@ -57,7 +57,7 @@ class MultiClassClassifierVGG16:
     def __init__(self, t_path='./dataset/train',
                  v_path='./dataset/validation',
                  i_size=(224, 224),
-                 b_size=32,
+                 b_size=20,
                  num_classes=9):
         self.train_path = t_path
         self.val_path = v_path
@@ -76,7 +76,7 @@ class MultiClassClassifierVGG16:
         self.val_length = v_len
         self.batch_size = b_size
 
-    def set_up_data_generator(self):
+    def set_up_data(self):
         train_data_generator = ImageDataGenerator(rescale=1. / 255.,
                                                   rotation_range=30,
                                                   shear_range=0.2,
@@ -107,7 +107,7 @@ class MultiClassClassifierVGG16:
                                      verbose=verbose,
                                      validation_data=self.validation_generator,
                                      validation_steps=self.val_length // self.batch_size,
-                                     callbacks=[ModelCheckpoint('./models2/multiclass_vgg16_save.h5',
+                                     callbacks=[ModelCheckpoint('./last_results/last_models/multiclass_vgg16_save.h5',
                                                                 monitor='val_loss',
                                                                 mode='min',
                                                                 save_best_only=True,
@@ -116,19 +116,18 @@ class MultiClassClassifierVGG16:
                                                 EarlyStopping(
                                                     monitor='val_loss',
                                                     mode='min',
-                                                    patience=10,
+                                                    patience=1,
                                                     min_delta=0.0005,
                                                     verbose=1)
                                                 ])
+            self.model.save('./last_results/last_models/multiclass_VGG16.h5')
         return history
 
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
 
-    def load_model_weights(self):
-        self.compile_model()
-        self.model.evaluate(self.validation_generator)
-        self.model.load_weights('./first_results/first_models/models2/multiclass_vgg16_save.h5')
+    def load_model(self):
+        self.model = tf.keras.models.load_model('./last_results/last_models/multiclass_VGG16')
 
     def predict(self, path):
         return self.model.predict(path)

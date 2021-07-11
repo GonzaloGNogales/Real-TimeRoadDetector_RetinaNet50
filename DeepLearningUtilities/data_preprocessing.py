@@ -5,6 +5,7 @@ import numpy as np
 import random
 import shutil
 from shutil import copyfile
+from PIL import Image
 
 
 class DataPreprocessing:
@@ -130,7 +131,13 @@ class DataPreprocessing:
             img = cv2.imread(self.validation + '/' + random_file)
             cv2.imwrite(os.path.join('D:\\DatasetTFG\\nonev' + '/' + random_file), img)
 
+    def png_to_jpg(self):
+        real_time_ds = '../dataset_realtime/train2'
+        for i in os.listdir(real_time_ds):
+            im = Image.open(real_time_ds + '/' + i)
+            rgb_im = im.convert('RGB')
+            rgb_im.save('../dataset_realtime/train/' + i[:-4] + '.jpg')
 
 if __name__ == '__main__':
     dataset_preprocessor = DataPreprocessing()
-    dataset_preprocessor.reformat_none_class()
+    dataset_preprocessor.png_to_jpg()
