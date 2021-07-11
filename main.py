@@ -4,8 +4,8 @@ from MultiClassClassifier.multiclass_classifier_augmentation import *
 from MultiClassClassifier.multiclass_classifier_VGG16based_model import *
 from MultiClassClassifier.multiclass_classifier_Inceptionv3_transferlearning import *
 from MultiClassClassifier.multiclass_classifier_ResNet50_transferlearning import *
+from RealTimeMultiLabelClassifier.realtime_classifier import *
 from DeepLearningUtilities.metrics_analyzer import *
-from DeepLearningUtilities.progress_bar import *
 from SlidingWindowsAlgorithm.sliding_windows import *
 
 if __name__ == '__main__':
@@ -90,6 +90,8 @@ if __name__ == '__main__':
     elif args.dnn == 'ResNet50_TL':
         dnn = MultiClassClassifierResNet50TransferLearning()
         i_size = (224, 224)
+    elif args.dnn == 'RetinaNet_TL_FN':
+        dnn = RealTimeClassifier()
     else:
         raise ValueError('Wrong DNN type :(')
 
@@ -111,13 +113,14 @@ if __name__ == '__main__':
             if model_ver is not None:
                 h = dnn.train(epochs=100, steps_per_epoch=spe, architecture_ver=model_ver)
             else:
-                h = dnn.train(epochs=2)
+                h = dnn.train()
 
-            # Evaluate the model to get the loss value and the metrics values of the model in validation
-            loss, accuracy = dnn.evaluate()
+            if args.dnn != 'RetinaNet_TL_FN':
+                # Evaluate the model to get the loss value and the metrics values of the model in validation
+                loss, accuracy = dnn.evaluate()
 
-            # Plot metrics from training when finished
-            plot_metrics_legend(h, args.dnn, loss, accuracy)
+                # Plot metrics from training when finished
+                plot_metrics_legend(h, args.dnn, loss, accuracy)
 
         elif args.load_model == 'YES':  # Evaluation case
             if args.dnn == 'VGG16' or args.dnn == 'InceptionV3_TL' or args.dnn == 'ResNet50_TL':

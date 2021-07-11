@@ -13,6 +13,7 @@ from six import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 from IPython.display import display, Javascript
 from IPython.display import Image as IPyImage
+from DeepLearningUtilities.progress_bar import progress_bar
 from object_detection.utils import label_map_util
 from object_detection.utils import config_util
 from object_detection.utils import visualization_utils as viz_utils
@@ -45,49 +46,56 @@ def plot_detections(image_np, boxes, classes, scores, category_index, image_name
 
 
 class RealTimeClassifier:
-    def __init__(self, t_path='../dataset_realtime/train',
-                 a_path='../dataset_realtime/annotations',
-                 pipeline_config='../SSD_retinanet_config/ssd_resnet50_v1_fpn_1024x1024_coco17_tpu-8.config',
-                 checkpoint_path='./checkpoints/ckpt-0',
-                 i_size=(1024, 1024),
-                 b_size=20):
+    def __init__(self, t_path='./dataset_realtime/train',
+                 a_path='./dataset_realtime/annotations',
+                 pipeline_config='./SSD_retinanet_config/ssd_resnet50_v1_fpn_1024x1024_coco17_tpu-8.config',
+                 checkpoint_path='./RealTimeMultiLabelClassifier/checkpoints/ckpt-0'):
         self.checkpoint_path = checkpoint_path
         self.pipeline_config = pipeline_config
         self.train_path = t_path
         self.annotations_path = a_path
-        self.input_size = i_size
         self.model = None
-        self.batch_size = b_size
-        self.train_length = len(os.listdir(self.train_path))
         self.num_classes = 8
         self.category_index = None
+        self.train_images = []
 
+        # Data tensors initialization in the constructor
         self.train_images_tensors = []
         self.train_gt_classes_one_hot_tensors = []
         self.train_gt_bbox_tensors = []
 
     def set_up_data(self):
         # Load all the training images inside the list class attribute
-        train_images = []
         train_annotations = []
         images = os.listdir(self.train_path)
         sorted_images = map(lambda l: int(l[:-4]), images)
         sorted_images = list(sorted_images)
+        total = len(sorted_images)
         sorted_images.sort()
         sorted_images = map(lambda l: str(l) + '.jpg', sorted_images)
 
+        it = 0
+        if total != 0:
+            progress_bar(it, total, prefix='Train images loading: ', suffix='Complete', length=50)
         for im in sorted_images:
             img_path = os.path.join(self.train_path, im)
             print(img_path)
-            train_images.append(load_image(img_path))
+            self.train_images.append(load_image(img_path))
+            it += 1
+            progress_bar(it, total, prefix=str(img_path) + ' successfully loaded: ', suffix='Complete', length=50)
 
-        print('Images loaded successfully =>', str(len(train_images)), 'train images loaded!')
+        print('Images loaded successfully =>', str(len(self.train_images)), 'train images loaded!')
 
         labels_list = os.listdir(self.annotations_path)
         sorted_labels = map(lambda l: int(l[:-4]), labels_list)
         sorted_labels = list(sorted_labels)
+        total = len(sorted_labels)
         sorted_labels.sort()
         sorted_labels = map(lambda l: str(l) + '.txt', sorted_labels)
+
+        it = 0
+        if total != 0:
+            progress_bar(it, total, prefix='Train labels loading: ', suffix='Complete', length=50)
         for labels_fn in sorted_labels:
             labels = open(self.annotations_path + '/' + labels_fn, "r")
             actual_labels_tensor = []
@@ -100,6 +108,8 @@ class RealTimeClassifier:
                 x2 = float(y + h / 2)
                 actual_labels_tensor.append(([x1, y1, x2, y2], c))
             train_annotations.append(actual_labels_tensor)
+            it += 1
+            progress_bar(it, total, prefix=str(labels_fn) + ' successfully loaded: ', suffix='Complete', length=50)
 
         print('Annotations loaded successfully =>', str(len(train_annotations)), 'train annotations loaded!')
 
@@ -123,7 +133,11 @@ class RealTimeClassifier:
 
         print('Category Index initialized successfully!')
 
-        for (train_image, train_annotation) in zip(train_images, train_annotations):
+        it = 0
+        total = len(self.train_images)
+        if total != 0:
+            progress_bar(it, total, prefix='Training tensors creation: ', suffix='Complete', length=50)
+        for (train_image, train_annotation) in zip(self.train_images, train_annotations):
             # Unbox the train annotation tuples for handling bounding boxes and their classes tensors separately
             image_bounding_boxes = []
             image_classes = []
@@ -147,6 +161,9 @@ class RealTimeClassifier:
 
             # do one-hot encoding to ground truth classes
             self.train_gt_classes_one_hot_tensors.append(tf.one_hot(zero_indexed_classes, self.num_classes))
+
+            it += 1
+            progress_bar(it, total, prefix='Training tensors creation: ', suffix='Complete', length=50)
 
         print('Finished setting up data => DATA READY FOR TRAINING!!!')
 
@@ -216,19 +233,93 @@ class RealTimeClassifier:
         # Alert assertion to provide feedback to the user
         assert len(self.model.trainable_variables) > 0, 'Please pass in a dummy image to create the trainable variables'
 
-    def train(self):
-        print('Not implemented yet')
+    # Decorator @tf.function for faster training in graph mode
+    @tf.function
+    def train_step(self, image_list, gt_boxes, gt_classes, optimizer, fine_tune_variables):
+        with tf.GradientTape() as tape:
 
-    def evaluate(self):
-        print('Not implemented yet')
+            # Preprocess the images
+            preprocessed_image_list = []
+            true_shape_list = []
+
+            for img in image_list:
+                processed_img, true_shape = self.model.preprocess(img)
+                preprocessed_image_list.append(processed_img)
+                true_shape_list.append(true_shape)
+
+            preprocessed_image_tensor = tf.concat(preprocessed_image_list, axis=0)
+            true_shape_tensor = tf.concat(true_shape_list, axis=0)
+
+            # Make a prediction
+            prediction = self.model.predict(preprocessed_image_tensor, true_shape_tensor)
+
+            # Provide the ground truth to the model for the loss to execute correctly
+            self.model.provide_groundtruth(
+                groundtruth_boxes_list=gt_boxes,
+                groundtruth_classes_list=gt_classes)
+
+            # Calculate the total loss localization loss + classification loss
+            losses = self.model.loss(prediction, true_shape_tensor)
+            total_loss = losses['Loss/localization_loss'] + losses['Loss/classification_loss']
+
+            # Calculate the gradients
+            gradients = tape.gradient(total_loss, fine_tune_variables)
+
+            # Optimize selected variables
+            optimizer.apply_gradients(zip(gradients, fine_tune_variables))
+
+        return total_loss
+
+    def train(self, b_size=20, lr=0.001):
+        # Initialize custom training hyper-parameters
+        batch_size = b_size
+        num_batches = len(os.listdir(self.train_path)) // b_size  # Total number of train images divided by batch size
+        learning_rate = lr
+        optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
+
+        # Selecting layers to perform fine tuning on them
+        # In RetinaNet layers with "tower" in it's names refers to layers placed before the prediction layer
+        # And layers with "head" in it's names refers to the prediction layers
+
+        # Now it's time to define a list that contains the layers that will be fine tuned
+        trainable_variables = self.model.trainable_variables
+        to_fine_tune = []
+        prefixes_to_train = [
+            'WeightSharedConvolutionalBoxPredictor/WeightSharedConvolutionalBoxHead',
+            'WeightSharedConvolutionalBoxPredictor/WeightSharedConvolutionalClassHead']
+        for trainable_variable in trainable_variables:
+            if any([trainable_variable.name.startswith(prefix) for prefix in prefixes_to_train]):
+                to_fine_tune.append(trainable_variable)
+
+        # Training loop
+        print('Starting fine tuning...', flush=True)
+
+        for idx in range(num_batches):
+            # Grab keys for a random subset of examples
+            all_idx = list(range(len(self.train_images)))
+            random.shuffle(all_idx)
+            rng_selected_idx = all_idx[:batch_size]
+
+            # Get the actual ground truth bounding boxes and classes
+            gt_boxes_list = [self.train_gt_bbox_tensors[idx] for idx in rng_selected_idx]
+            gt_classes_list = [self.train_gt_classes_one_hot_tensors[idx] for idx in rng_selected_idx]
+
+            # Get the images
+            image_tensors = [self.train_images_tensors[idx] for idx in rng_selected_idx]
+
+            # Training step
+            total_loss = self.train_step(image_tensors, gt_boxes_list, gt_classes_list, optimizer, to_fine_tune)
+
+            # Show the model loss after training in actual batch
+            print('batch ' + str(idx) + ' of ' + str(num_batches) + ', loss=' + str(total_loss.numpy()), flush=True)
+
+        print('Finished fine tuning!')
+
+        # Save the model
+        self.model.save('./last_results/last_models/fine_tuned_realtime_retinanet50.h5')
 
     def load_model(self):
-        print('Not implemented yet')
+        self.model = tf.keras.models.load_model('./last_results/last_models/fine_tuned_realtime_retinanet50.h5')
 
     def predict(self):
-        print('Not implemented yet')
-
-
-if __name__ == '__main__':
-    retina_net = RealTimeClassifier()
-    retina_net.compile_model()
+        print('Not yet implemented')
