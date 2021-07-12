@@ -12,3 +12,5 @@ detected_video.avi
 video_input.mp4
 video_input_1.mp4
 RealTimeMultiLabelClassifier/checkpoints/
+real_time_results/
+final_realtime_detected_video.avi

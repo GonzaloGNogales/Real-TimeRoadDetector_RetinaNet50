@@ -1,20 +1,14 @@
-import matplotlib
+import shutil
+
 import matplotlib.pyplot as plt
 import os
 import random
-import zipfile
-import io
-import scipy.misc
+import cv2
 import numpy as np
-import glob
-import imageio
 import tensorflow as tf
 from six import BytesIO
-from PIL import Image, ImageDraw, ImageFont
-from IPython.display import display, Javascript
-from IPython.display import Image as IPyImage
+from PIL import Image
 from DeepLearningUtilities.progress_bar import progress_bar
-from object_detection.utils import label_map_util
 from object_detection.utils import config_util
 from object_detection.utils import visualization_utils as viz_utils
 from object_detection.builders import model_builder
@@ -79,7 +73,6 @@ class RealTimeClassifier:
             progress_bar(it, total, prefix='Train images loading: ', suffix='Complete', length=50)
         for im in sorted_images:
             img_path = os.path.join(self.train_path, im)
-            print(img_path)
             self.train_images.append(load_image(img_path))
             it += 1
             progress_bar(it, total, prefix=str(img_path) + ' successfully loaded: ', suffix='Complete', length=50)
@@ -270,10 +263,11 @@ class RealTimeClassifier:
 
         return total_loss
 
-    def train(self, b_size=20, lr=0.001):
+    def train(self, b_size=5, lr=0.01):
         # Initialize custom training hyper-parameters
         batch_size = b_size
-        num_batches = len(os.listdir(self.train_path)) // b_size  # Total number of train images divided by batch size
+        # num_batches = len(os.listdir(self.train_path)) // b_size  # Total number of train images divided by batch size
+        num_batches = 50
         learning_rate = lr
         optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
 
@@ -315,11 +309,49 @@ class RealTimeClassifier:
 
         print('Finished fine tuning!')
 
-        # Save the model
-        self.model.save('./last_results/last_models/fine_tuned_realtime_retinanet50.h5')
+        # Save the model to a config file and a checkpoint weights file
+        # self.model.build((1024, 1024, 3))
+        # tf.saved_model.save(self.model, './last_results/last_models/fine_tuned_realtime_retinanet50', signatures=None, options=None)
+        print('Model saved successfully!!!')
 
     def load_model(self):
-        self.model = tf.keras.models.load_model('./last_results/last_models/fine_tuned_realtime_retinanet50.h5')
+        # Load config using get_configs_from_pipeline_file and then restore checkpoints from the load checkpoints path
+        # self.model = tf.saved_model.load('./last_results/last_models/fine_tuned_realtime_retinanet50')
+        print('Model loaded successfully!!!')
 
-    def predict(self):
-        print('Not yet implemented')
+    @tf.function
+    def detect(self, input_tensor):
+        # input_tensor must be: A [1, height, width, 3] Tensor of type tf.float32.
+        # returns a dict containing 3 Tensors (detection_boxes, detection_classes, detection_scores).
+        preprocessed_image, shapes = self.model.preprocess(input_tensor)
+        predictions = self.model.predict(preprocessed_image, shapes)
+        detections = self.model.postprocess(predictions, shapes)
+        return detections
+
+    def predict(self, source_path):
+        class_id_offset = 1
+        result_dir = './real_time_results/'
+        if os.path.isdir(result_dir):
+            shutil.rmtree(result_dir)
+        os.mkdir(result_dir)
+
+        s_path = os.listdir(source_path)
+        sorted_s_path = map(lambda l: int(l[:-4]), s_path)
+        sorted_s_path = list(sorted_s_path)
+        sorted_s_path.sort()
+
+        image_idx = 0
+        for img in sorted_s_path:
+            im = np.expand_dims(load_image(source_path + '/' + str(img) + '.jpg'), axis=0)
+            input_tensor = tf.convert_to_tensor(im, dtype=tf.float32)
+            detections = self.detect(input_tensor)
+            plot_detections(
+                im[0],
+                detections['detection_boxes'][0].numpy(),
+                detections['detection_classes'][0].numpy().astype(np.uint32) + class_id_offset,
+                detections['detection_scores'][0].numpy(),
+                self.category_index,
+                image_name=result_dir + str(image_idx) + '.jpg')
+            image_idx += 1
+
+        return result_dir

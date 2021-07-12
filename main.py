@@ -21,6 +21,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--load_model', type=str, default='NO', help='String that indicates if we want to load a model instead of training it')
     parser.add_argument(
+        '--detect_video', type=str, default='NO', help='String that indicates if we want to generate a detected video')
+    parser.add_argument(
         '--sliding_windows_test', type=str, default='NO', help='String that indicates if we want to execute sliding windows algorithm with te selected dnn in test mode')
     parser.add_argument(
         '--sliding_windows', type=str, default='NO', help='String that indicates if we want to execute sliding windows algorithm with te selected dnn')
@@ -123,12 +125,12 @@ if __name__ == '__main__':
                 plot_metrics_legend(h, args.dnn, loss, accuracy)
 
         elif args.load_model == 'YES':  # Evaluation case
-            if args.dnn == 'VGG16' or args.dnn == 'InceptionV3_TL' or args.dnn == 'ResNet50_TL':
+            if args.dnn == 'VGG16' or args.dnn == 'InceptionV3_TL' or args.dnn == 'ResNet50_TL' or args.dnn == 'RetinaNet_TL_FN':
                 dnn.load_model()
             else:
                 dnn.load_model(spe=spe, av=model_ver)
 
-            if args.sliding_windows != 'YES':
+            if args.sliding_windows != 'YES' and args.dnn != 'RetinaNet_TL_FN':
                 loss, accuracy = dnn.evaluate()
 
                 # Code to save the evaluation results on a txt file inside evaluations directory
@@ -136,7 +138,7 @@ if __name__ == '__main__':
                 file.write('[' + str(args.dnn) + '] -> Loss: ' + str(loss) + ' | Accuracy: ' + str(accuracy) + '\n')
                 file.close()
 
-        if args.sliding_windows == 'YES':
+        if args.detect_video == 'YES':
             # Prepare the video testing directory
             test_dir = './test_video/'
             if os.path.isdir(test_dir):
@@ -156,7 +158,11 @@ if __name__ == '__main__':
             print('Finished processing video frames!')
 
             # detector.preprocess_data('./test_video/', False)  sliding windows on ./test_video/
-            directory = sliding_windows(args.dnn, dnn, i_size, test_dir)
+            directory = None
+            if args.sliding_windows == 'YES':
+                directory = sliding_windows(args.dnn, dnn, i_size, test_dir)
+            elif args.real_time == 'YES':
+                directory = dnn.predict(test_dir)
 
             final_video_array = list()
             it = 0
