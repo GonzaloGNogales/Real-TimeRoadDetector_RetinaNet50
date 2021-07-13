@@ -42,22 +42,45 @@ class RealTimeClassifier:
                  a_path='./dataset_realtime/annotations',
                  pipeline_config='./SSD_retinanet_config/ssd_resnet50_v1_fpn_1024x1024_coco17_tpu-8.config',
                  checkpoint_path='./RealTimeMultiLabelClassifier/retinanet_checkpoints/ckpt-0',
-                 save_path='./RealTimeMultiLabelClassifier/fine_tuning_checkpoints/'):
+                 save_checkpoint_path='./RealTimeMultiLabelClassifier/fine_tuning_checkpoints/',
+                 save_config_path='./RealTimeMultiLabelClassifier/fine_tuning_configs/'):
         self.checkpoint_path = checkpoint_path
-        self.save_checkpoint_path = save_path
         self.pipeline_config = pipeline_config
+        self.save_checkpoint_path = save_checkpoint_path
+        self.save_config_path = save_config_path
+        self.checkpoint = None
+        self.fine_tuning_checkpoint_manager = None
+
         self.train_path = t_path
         self.annotations_path = a_path
         self.model = None
         self.num_classes = 8
         self.category_index = None
         self.train_images = []
-        self.checkpoint = None
 
         # Data tensors initialization in the constructor
         self.train_images_tensors = []
         self.train_gt_classes_one_hot_tensors = []
         self.train_gt_bbox_tensors = []
+
+        # Category index dict initialization on the constructor
+        self.category_index = {1: {'id': 1,
+                                   'name': 'car'},
+                               2: {'id': 2,
+                                   'name': 'moto'},
+                               3: {'id': 3,
+                                   'name': 'truck'},
+                               4: {'id': 4,
+                                   'name': 'pedestrian'},
+                               5: {'id': 5,
+                                   'name': 'forbid_signal'},
+                               6: {'id': 6,
+                                   'name': 'warning_signal'},
+                               7: {'id': 7,
+                                   'name': 'stop_signal'},
+                               8: {'id': 8,
+                                   'name': 'yield_signal'}
+                               }
 
     def set_up_data(self):
         # Load all the training images inside the list class attribute
@@ -106,26 +129,6 @@ class RealTimeClassifier:
             progress_bar(it, total, prefix=str(labels_fn) + ' successfully loaded: ', suffix='Complete', length=50)
 
         print('Annotations loaded successfully =>', str(len(train_annotations)), 'train annotations loaded!')
-
-        self.category_index = {1: {'id': 1,
-                                   'name': 'car'},
-                               2: {'id': 2,
-                                   'name': 'moto'},
-                               3: {'id': 3,
-                                   'name': 'truck'},
-                               4: {'id': 4,
-                                   'name': 'pedestrian'},
-                               5: {'id': 5,
-                                   'name': 'forbid_signal'},
-                               6: {'id': 6,
-                                   'name': 'warning_signal'},
-                               7: {'id': 7,
-                                   'name': 'stop_signal'},
-                               8: {'id': 8,
-                                   'name': 'yield_signal'}
-                               }
-
-        print('Category Index initialized successfully!')
 
         it = 0
         total = len(self.train_images)
@@ -176,6 +179,10 @@ class RealTimeClassifier:
         # Set training to true needed as the scope is to fine tune the network with new custom dataset
         self.model = model_builder.build(model_config=model_config, is_training=True)
 
+        # Save new pipeline config
+        new_pipeline_config = config_util.create_pipeline_proto_from_configs(config)
+        config_util.save_pipeline_config(new_pipeline_config, self.save_config_path)
+
         '''
         Final target: create a custom model which reuses some parts of the layers of RetinaNet model.
         The interesting parts of RetinaNet that are needed for fine tuning are the feature extraction layers and the 
@@ -208,6 +215,11 @@ class RealTimeClassifier:
         # Restore the checkpoint to the checkpoint path
         # !!! expect_partial() is needed for not caring about warnings when checkpoint restoring !!!
         self.checkpoint.restore(self.checkpoint_path).expect_partial()
+
+        # Save checkpoint for loading later on
+        save_checkpoint = tf.train.Checkpoint(model=self.model)
+        self.fine_tuning_checkpoint_manager = tf.train.CheckpointManager(
+            save_checkpoint, self.save_checkpoint_path, max_to_keep=1)
 
         # Finishing it is necessary to run a dummy image to generate the model variables that are 0 when restoring
         # from a checkpoint file but it is correctly initialized with the corresponding weights with the first image
@@ -305,28 +317,25 @@ class RealTimeClassifier:
             # Training step
             total_loss = self.train_step(image_tensors, gt_boxes_list, gt_classes_list, optimizer, to_fine_tune)
 
-            # Save the actual training checkpoint weights for performing inference later
-            sav_dir = self.checkpoint.save(self.save_checkpoint_path + 'ssrd')
-            print('Model checkpoint saved at:', sav_dir)
-
             # Show the model loss after training in actual batch
             print('batch ' + str(idx) + ' of ' + str(num_batches) + ', loss=' + str(total_loss.numpy()), flush=True)
 
         print('Finished fine tuning!')
 
-        # Save the model to a config file and a checkpoint weights file
-        # config_util.save_pipeline_config()
+        # Save the model checkpoint file
+        self.fine_tuning_checkpoint_manager.save()
         print('Model saved successfully!!!')
 
     def load_model(self):
         # Load config using get_configs_from_pipeline_file and then restore checkpoints from the load checkpoints path
-        config = config_util.get_configs_from_pipeline_file(self.pipeline_config)
+        config = config_util.get_configs_from_pipeline_file(self.save_config_path + 'pipeline.config')
         model_config = config['model']
-        model_config.ssd.num_classes = self.num_classes
-        model_config.ssd.freeze_batchnorm = True
         self.model = model_builder.build(model_config=model_config, is_training=False)
-        self.checkpoint = tf.train.Checkpoint()
-        self.checkpoint.restore(self.save_checkpoint_path + 'ssrd').expect_partial()
+        print('Model config loaded successfully!')
+
+        self.checkpoint = tf.train.Checkpoint(model=self.model)
+        self.checkpoint.restore(self.save_checkpoint_path + 'ckpt-1').expect_partial()
+        print('Model weights restored successfully!')
 
         # Model preprocess() method can be used to generate a dummy image with it's shapes
         dummy_image, dummy_shape = self.model.preprocess(tf.zeros([1, 1024, 1024, 3]))
