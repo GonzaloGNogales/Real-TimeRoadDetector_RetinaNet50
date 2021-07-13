@@ -11,6 +11,7 @@ last_results/
 detected_video.avi
 video_input.mp4
 video_input_1.mp4
-RealTimeMultiLabelClassifier/checkpoints/
+RealTimeMultiLabelClassifier/retinanet_checkpoints/
+RealTimeMultiLabelClassifier/fine_tuning_checkpoints/
 real_time_results/
 final_realtime_detected_video.avi

@@ -100,9 +100,13 @@ if __name__ == '__main__':
     if dnn is not None:
 
         # Set up data generator for pre processing the images and fixing batch size
-        dnn.set_up_data()
+        if args.dnn != 'RetinaNet_TL_FN':
+            dnn.set_up_data()
 
         if args.load_model != 'YES':  # Training case
+            if args.dnn == 'RetinaNet_TL_FN':
+                dnn.set_up_data()
+
             # Model architecture definition and compilation
             if model_ver == 'v1':
                 dnn.define_model_architecture_v1()

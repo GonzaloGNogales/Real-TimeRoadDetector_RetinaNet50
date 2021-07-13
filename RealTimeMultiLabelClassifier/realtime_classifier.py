@@ -1,9 +1,7 @@
 import shutil
-
 import matplotlib.pyplot as plt
 import os
 import random
-import cv2
 import numpy as np
 import tensorflow as tf
 from six import BytesIO
@@ -43,8 +41,10 @@ class RealTimeClassifier:
     def __init__(self, t_path='./dataset_realtime/train',
                  a_path='./dataset_realtime/annotations',
                  pipeline_config='./SSD_retinanet_config/ssd_resnet50_v1_fpn_1024x1024_coco17_tpu-8.config',
-                 checkpoint_path='./RealTimeMultiLabelClassifier/checkpoints/ckpt-0'):
+                 checkpoint_path='./RealTimeMultiLabelClassifier/retinanet_checkpoints/ckpt-0',
+                 save_path='./RealTimeMultiLabelClassifier/fine_tuning_checkpoints/'):
         self.checkpoint_path = checkpoint_path
+        self.save_checkpoint_path = save_path
         self.pipeline_config = pipeline_config
         self.train_path = t_path
         self.annotations_path = a_path
@@ -52,6 +52,7 @@ class RealTimeClassifier:
         self.num_classes = 8
         self.category_index = None
         self.train_images = []
+        self.checkpoint = None
 
         # Data tensors initialization in the constructor
         self.train_images_tensors = []
@@ -202,13 +203,13 @@ class RealTimeClassifier:
         model_checkpoint = tf.train.Checkpoint(
             _feature_extractor=self.model._feature_extractor,
             _box_predictor=box_predictor_checkpoint)
-        checkpoint = tf.train.Checkpoint(model=model_checkpoint)
+        self.checkpoint = tf.train.Checkpoint(model=model_checkpoint)
 
         # Restore the checkpoint to the checkpoint path
         # !!! expect_partial() is needed for not caring about warnings when checkpoint restoring !!!
-        checkpoint.restore(self.checkpoint_path).expect_partial()
+        self.checkpoint.restore(self.checkpoint_path).expect_partial()
 
-        # Finally it is necessary to run a dummy image to generate the model variables that are 0 when restoring
+        # Finishing it is necessary to run a dummy image to generate the model variables that are 0 when restoring
         # from a checkpoint file but it is correctly initialized with the corresponding weights with the first image
         # prediction
 
@@ -219,7 +220,7 @@ class RealTimeClassifier:
         prediction = self.model.predict(dummy_image, dummy_shape)
 
         # Model postprocess() method is used to transform the predictions into final detections
-        detections = self.model.postprocess(prediction, dummy_shape)
+        _ = self.model.postprocess(prediction, dummy_shape)
 
         print('Model weights restored successfully!')
 
@@ -304,19 +305,38 @@ class RealTimeClassifier:
             # Training step
             total_loss = self.train_step(image_tensors, gt_boxes_list, gt_classes_list, optimizer, to_fine_tune)
 
+            # Save the actual training checkpoint weights for performing inference later
+            sav_dir = self.checkpoint.save(self.save_checkpoint_path + 'ssrd')
+            print('Model checkpoint saved at:', sav_dir)
+
             # Show the model loss after training in actual batch
             print('batch ' + str(idx) + ' of ' + str(num_batches) + ', loss=' + str(total_loss.numpy()), flush=True)
 
         print('Finished fine tuning!')
 
         # Save the model to a config file and a checkpoint weights file
-        # self.model.build((1024, 1024, 3))
-        # tf.saved_model.save(self.model, './last_results/last_models/fine_tuned_realtime_retinanet50', signatures=None, options=None)
+        # config_util.save_pipeline_config()
         print('Model saved successfully!!!')
 
     def load_model(self):
         # Load config using get_configs_from_pipeline_file and then restore checkpoints from the load checkpoints path
-        # self.model = tf.saved_model.load('./last_results/last_models/fine_tuned_realtime_retinanet50')
+        config = config_util.get_configs_from_pipeline_file(self.pipeline_config)
+        model_config = config['model']
+        model_config.ssd.num_classes = self.num_classes
+        model_config.ssd.freeze_batchnorm = True
+        self.model = model_builder.build(model_config=model_config, is_training=False)
+        self.checkpoint = tf.train.Checkpoint()
+        self.checkpoint.restore(self.save_checkpoint_path + 'ssrd').expect_partial()
+
+        # Model preprocess() method can be used to generate a dummy image with it's shapes
+        dummy_image, dummy_shape = self.model.preprocess(tf.zeros([1, 1024, 1024, 3]))
+
+        # Run a prediction with the dummy image and shape
+        prediction = self.model.predict(dummy_image, dummy_shape)
+
+        # Model postprocess() method is used to transform the predictions into final detections
+        _ = self.model.postprocess(prediction, dummy_shape)
+
         print('Model loaded successfully!!!')
 
     @tf.function
@@ -341,6 +361,10 @@ class RealTimeClassifier:
         sorted_s_path.sort()
 
         image_idx = 0
+        it = 0
+        total = len(sorted_s_path)
+        if total != 0:
+            progress_bar(it, total, prefix='Detecting frame ' + str(it) + ': ', suffix='Complete', length=50)
         for img in sorted_s_path:
             im = np.expand_dims(load_image(source_path + '/' + str(img) + '.jpg'), axis=0)
             input_tensor = tf.convert_to_tensor(im, dtype=tf.float32)
@@ -353,5 +377,7 @@ class RealTimeClassifier:
                 self.category_index,
                 image_name=result_dir + str(image_idx) + '.jpg')
             image_idx += 1
+            it += 1
+            progress_bar(it, total, prefix='Detecting frame ' + str(it) + ': ', suffix='Complete', length=50)
 
         return result_dir
