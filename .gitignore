@@ -16,3 +16,4 @@ RealTimeMultiLabelClassifier/fine_tuning_checkpoints/
 RealTimeMultiLabelClassifier/fine_tuning_configs/
 real_time_results/
 final_realtime_detected_video.avi
+detected_videos/

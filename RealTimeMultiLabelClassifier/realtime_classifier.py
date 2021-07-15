@@ -1,5 +1,5 @@
 import shutil
-import matplotlib.pyplot as plt
+import cv2
 import os
 import random
 import numpy as np
@@ -29,12 +29,12 @@ def plot_detections(image_np, boxes, classes, scores, category_index, image_name
         scores,
         category_index,
         use_normalized_coordinates=True,
-        min_score_thresh=0.8)
+        min_score_thresh=0.7)
 
     if image_name:
-        plt.imsave(image_name, image_np_with_annotations)
+        cv2.imwrite(image_name, image_np_with_annotations)
     else:
-        plt.imshow(image_np_with_annotations)
+        cv2.imshow('real_time_camera_detection', image_np_with_annotations)
 
 
 class RealTimeClassifier:
@@ -240,7 +240,7 @@ class RealTimeClassifier:
         assert len(self.model.trainable_variables) > 0, 'Please pass in a dummy image to create the trainable variables'
 
     # Decorator @tf.function for faster training in graph mode
-    @tf.function
+    @tf.function(experimental_relax_shapes=True)
     def train_step(self, image_list, gt_boxes, gt_classes, optimizer, fine_tune_variables):
         with tf.GradientTape() as tape:
 
@@ -280,7 +280,7 @@ class RealTimeClassifier:
         # Initialize custom training hyper-parameters
         batch_size = b_size
         # num_batches = len(os.listdir(self.train_path)) // b_size  # Total number of train images divided by batch size
-        num_batches = 50
+        num_batches = 1000
         learning_rate = lr
         optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
 
@@ -348,7 +348,7 @@ class RealTimeClassifier:
 
         print('Model loaded successfully!!!')
 
-    @tf.function
+    @tf.function(experimental_relax_shapes=True)
     def detect(self, input_tensor):
         # input_tensor must be: A [1, height, width, 3] Tensor of type tf.float32.
         # returns a dict containing 3 Tensors (detection_boxes, detection_classes, detection_scores).
@@ -375,7 +375,8 @@ class RealTimeClassifier:
         if total != 0:
             progress_bar(it, total, prefix='Detecting frame ' + str(it) + ': ', suffix='Complete', length=50)
         for img in sorted_s_path:
-            im = np.expand_dims(load_image(source_path + '/' + str(img) + '.jpg'), axis=0)
+            image = cv2.imread(source_path + '/' + str(img) + '.jpg')
+            im = np.expand_dims(image, axis=0)
             input_tensor = tf.convert_to_tensor(im, dtype=tf.float32)
             detections = self.detect(input_tensor)
             plot_detections(
@@ -390,3 +391,24 @@ class RealTimeClassifier:
             progress_bar(it, total, prefix='Detecting frame ' + str(it) + ': ', suffix='Complete', length=50)
 
         return result_dir
+
+    def detect_on_camera(self):
+        class_id_offset = 1
+        camera = cv2.VideoCapture(0)  # You can also capture from a video as cv2.VideoCapture(',/video_input.mp4')
+
+        while camera.isOpened():
+            ret, frame = camera.read()
+            frame_expanded = np.expand_dims(frame, axis=0)
+            frame_tensor = tf.convert_to_tensor(frame_expanded, dtype=tf.float32)
+            detection = self.detect(frame_tensor)
+            plot_detections(
+                frame_expanded[0],
+                detection['detection_boxes'][0].numpy(),
+                detection['detection_classes'][0].numpy().astype(np.uint32) + class_id_offset,
+                detection['detection_scores'][0].numpy(),
+                self.category_index)
+
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                camera.release()
+                cv2.destroyAllWindows()
+                break

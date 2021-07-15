@@ -28,6 +28,8 @@ if __name__ == '__main__':
         '--sliding_windows', type=str, default='NO', help='String that indicates if we want to execute sliding windows algorithm with te selected dnn')
     parser.add_argument(
         '--real_time', type=str, default='NO', help='String that determines if the code that will execute has to do with the fully convolutional solution')
+    parser.add_argument(
+        '--detect_on_camera', type=str, default='NO', help='String that determines if the detection is performed on a video or with a camera in real time')
 
     args = parser.parse_args()
     dnn = None
@@ -97,7 +99,11 @@ if __name__ == '__main__':
     else:
         raise ValueError('Wrong DNN type :(')
 
-    if dnn is not None:
+    if args.dnn == 'RetinaNet_TL_FN' and args.load_model == 'YES' and args.detect_on_camera == 'YES':
+        dnn.load_model()
+        dnn.detect_on_camera()
+
+    elif dnn is not None:
 
         # Set up data generator for pre processing the images and fixing batch size
         if args.dnn != 'RetinaNet_TL_FN':
@@ -168,31 +174,24 @@ if __name__ == '__main__':
             elif args.real_time == 'YES':
                 directory = dnn.predict(test_dir)
 
-            final_video_array = list()
+            listed_results_dir = os.listdir(directory)
+            sorted_res_path = map(lambda l: int(l[:-4]), listed_results_dir)
+            sorted_res_path = list(sorted_res_path)
+            sorted_res_path.sort()
+
+            size = (1920, 1080)
+            output_video = cv2.VideoWriter('./detected_video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
+
             it = 0
             total = len(os.listdir(directory))
             if total != 0:
-                progress_bar(it, total, prefix='Loading video frames: ', suffix='Complete', length=50)
-            for frame in os.listdir(directory):
+                progress_bar(it, total, prefix='Assembling video frames: ', suffix='Complete', length=50)
+            for frame in sorted_res_path:
                 it += 1
-                progress_bar(it, total, prefix='Loading video frames: ', suffix='Complete', length=50)
-                if os.path.isfile(directory + frame) and frame.endswith('.jpg'):
-                    f = cv2.imread(directory + frame)
-                    final_video_array.append((f, frame))
-            h, w, _ = final_video_array[0][0].shape
-            size = (w, h)
-            output_video = cv2.VideoWriter(directory + 'detected_video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
+                progress_bar(it, total, prefix='Assembling video frames: ', suffix='Complete', length=50)
+                f = cv2.imread(directory + str(frame) + '.jpg')
+                output_video.write(f)
 
-            # Progress bar for giving feedback to the users
-            final_video_array.sort(key=lambda tup: int(tup[1][:-4]))
-            it = 0
-            total = len(final_video_array)
-            if total != 0:
-                progress_bar(it, total, prefix='Video mounting progress: ', suffix='Complete', length=50)
-            for i in range(len(final_video_array)):
-                it += 1
-                progress_bar(it, total, prefix='Video mounting progress: ', suffix='Complete', length=50)
-                output_video.write(final_video_array[i][0])
             output_video.release()
             print('The video is finished! See the results playing the file: detected_video.avi')
 
