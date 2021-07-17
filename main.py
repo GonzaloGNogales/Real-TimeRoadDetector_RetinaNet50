@@ -180,7 +180,7 @@ if __name__ == '__main__':
             sorted_res_path.sort()
 
             size = (1920, 1080)
-            output_video = cv2.VideoWriter('./detected_video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
+            output_video = cv2.VideoWriter('./nice_detected_video_extended_dataset_3000epochs.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
 
             it = 0
             total = len(os.listdir(directory))

@@ -54,7 +54,7 @@ class RealTimeClassifier:
         self.train_path = t_path
         self.annotations_path = a_path
         self.model = None
-        self.num_classes = 8
+        self.num_classes = 9
         self.category_index = None
         self.train_images = []
 
@@ -73,13 +73,15 @@ class RealTimeClassifier:
                                4: {'id': 4,
                                    'name': 'pedestrian'},
                                5: {'id': 5,
-                                   'name': 'forbid_signal'},
+                                   'name': 'prohibitory_signal'},
                                6: {'id': 6,
                                    'name': 'warning_signal'},
                                7: {'id': 7,
                                    'name': 'stop_signal'},
                                8: {'id': 8,
-                                   'name': 'yield_signal'}
+                                   'name': 'yield_signal'},
+                               9: {'id': 9,
+                                   'name': 'mandatory_signal'}
                                }
 
     def set_up_data(self):
@@ -280,7 +282,7 @@ class RealTimeClassifier:
         # Initialize custom training hyper-parameters
         batch_size = b_size
         # num_batches = len(os.listdir(self.train_path)) // b_size  # Total number of train images divided by batch size
-        num_batches = 1000
+        num_batches = 3000
         learning_rate = lr
         optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
 
