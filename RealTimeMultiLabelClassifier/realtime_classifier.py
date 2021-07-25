@@ -170,7 +170,8 @@ class RealTimeClassifier:
         config = config_util.get_configs_from_pipeline_file(self.pipeline_config)
         model_config = config['model']
 
-        # Set number of classes to 8: cars, motos, trucks, pedestrians, forbid_signals, warning_signals, stop_signals and yield_signals
+        # Set number of classes to 9: cars, moto, trucks, pedestrians, forbid_signals, mandatory signals,
+        # warning_signals, stop_signals and yield_signals
         model_config.ssd.num_classes = self.num_classes
 
         # Freeze Batch Normalization layers because the objective is to fine tune the network, not to retrain all the params
@@ -281,8 +282,7 @@ class RealTimeClassifier:
     def train(self, b_size=5, lr=0.01):
         # Initialize custom training hyper-parameters
         batch_size = b_size
-        # num_batches = len(os.listdir(self.train_path)) // b_size  # Total number of train images divided by batch size
-        num_batches = 3000
+        num_batches = 2000
         learning_rate = lr
         optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
 
@@ -302,19 +302,24 @@ class RealTimeClassifier:
 
         # Training loop
         print('Starting fine tuning...', flush=True)
-
+        idx_list = list()
         for idx in range(num_batches):
-            # Grab keys for a random subset of examples
-            all_idx = list(range(len(self.train_images)))
-            random.shuffle(all_idx)
-            rng_selected_idx = all_idx[:batch_size]
+            # Randomly and Evenly select data indexes
+            if not idx_list:
+                idx_list = list(range(len(self.train_images)))
+
+            rng_list_idx = list()
+            for sample in range(batch_size):
+                randomly_selected_idx = random.choice(idx_list)
+                idx_list.remove(randomly_selected_idx)
+                rng_list_idx.append(randomly_selected_idx)
 
             # Get the actual ground truth bounding boxes and classes
-            gt_boxes_list = [self.train_gt_bbox_tensors[idx] for idx in rng_selected_idx]
-            gt_classes_list = [self.train_gt_classes_one_hot_tensors[idx] for idx in rng_selected_idx]
+            gt_boxes_list = [self.train_gt_bbox_tensors[idx] for idx in rng_list_idx]
+            gt_classes_list = [self.train_gt_classes_one_hot_tensors[idx] for idx in rng_list_idx]
 
             # Get the images
-            image_tensors = [self.train_images_tensors[idx] for idx in rng_selected_idx]
+            image_tensors = [self.train_images_tensors[idx] for idx in rng_list_idx]
 
             # Training step
             total_loss = self.train_step(image_tensors, gt_boxes_list, gt_classes_list, optimizer, to_fine_tune)

@@ -38,11 +38,11 @@ if __name__ == '__main__':
     i_size = None
 
     # Instantiate a custom DNN to train
-    if args.dnn == 'MCNA':
+    if args.dnn == 'MCNA-v1-150x150':
         i_size = (150, 150)
         dnn = MultiClassClassifierNoAugmentation()  # Instantiate HERE
         model_ver = 'v1'
-    elif args.dnn == 'MCA':
+    elif args.dnn == 'MCNA-v2-150x150':
         dnn = MultiClassClassifierAugmentation()
         model_ver = 'v1'
     elif args.dnn == 'MCA-v1-150x150':
@@ -94,23 +94,23 @@ if __name__ == '__main__':
     elif args.dnn == 'ResNet50_TL':
         dnn = MultiClassClassifierResNet50TransferLearning()
         i_size = (224, 224)
-    elif args.dnn == 'RetinaNet_TL_FN':
+    elif args.dnn == 'RetinaNet_TL_FT':
         dnn = RealTimeClassifier()
     else:
         raise ValueError('Wrong DNN type :(')
 
-    if args.dnn == 'RetinaNet_TL_FN' and args.load_model == 'YES' and args.detect_on_camera == 'YES':
+    if args.dnn == 'RetinaNet_TL_FT' and args.load_model == 'YES' and args.detect_on_camera == 'YES':
         dnn.load_model()
         dnn.detect_on_camera()
 
     elif dnn is not None:
 
         # Set up data generator for pre processing the images and fixing batch size
-        if args.dnn != 'RetinaNet_TL_FN':
+        if args.dnn != 'RetinaNet_TL_FT':
             dnn.set_up_data()
 
         if args.load_model != 'YES':  # Training case
-            if args.dnn == 'RetinaNet_TL_FN':
+            if args.dnn == 'RetinaNet_TL_FT':
                 dnn.set_up_data()
 
             # Model architecture definition and compilation
@@ -127,7 +127,7 @@ if __name__ == '__main__':
             else:
                 h = dnn.train()
 
-            if args.dnn != 'RetinaNet_TL_FN':
+            if args.dnn != 'RetinaNet_TL_FT':
                 # Evaluate the model to get the loss value and the metrics values of the model in validation
                 loss, accuracy = dnn.evaluate()
 
@@ -135,12 +135,12 @@ if __name__ == '__main__':
                 plot_metrics_legend(h, args.dnn, loss, accuracy)
 
         elif args.load_model == 'YES':  # Evaluation case
-            if args.dnn == 'VGG16' or args.dnn == 'InceptionV3_TL' or args.dnn == 'ResNet50_TL' or args.dnn == 'RetinaNet_TL_FN':
+            if args.dnn == 'VGG16' or args.dnn == 'InceptionV3_TL' or args.dnn == 'ResNet50_TL' or args.dnn == 'RetinaNet_TL_FT':
                 dnn.load_model()
             else:
                 dnn.load_model(spe=spe, av=model_ver)
 
-            if args.sliding_windows != 'YES' and args.dnn != 'RetinaNet_TL_FN':
+            if args.sliding_windows != 'YES' and args.dnn != 'RetinaNet_TL_FT':
                 loss, accuracy = dnn.evaluate()
 
                 # Code to save the evaluation results on a txt file inside evaluations directory
@@ -180,7 +180,7 @@ if __name__ == '__main__':
             sorted_res_path.sort()
 
             size = (1920, 1080)
-            output_video = cv2.VideoWriter('./nice_detected_video_extended_dataset_3000epochs.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
+            output_video = cv2.VideoWriter('./final video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
 
             it = 0
             total = len(os.listdir(directory))
