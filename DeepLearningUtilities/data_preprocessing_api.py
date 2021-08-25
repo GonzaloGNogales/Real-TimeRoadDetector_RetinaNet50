@@ -20,6 +20,8 @@ class DataPreprocessing:
         self.dataset_dest = 'D:\DatasetTFG\dataset'
         self.training = 'D:\\DatasetTFG\\dataset\\train\\none'
         self.validation = 'D:\\DatasetTFG\\dataset\\validation\\none'
+        self.mandatory_raw = 'D:\\DatasetTFG\\Labeling process\\Mandatory labeling\\train_raw'
+        self.mandatory_labels = 'D:\\DatasetTFG\\Labeling process\\Mandatory labeling\\labels_train_raw'
 
     def dataset_preparation(self):
         if not os.path.isdir('D:\\DatasetTFG\\cropped_train'):
@@ -57,11 +59,11 @@ class DataPreprocessing:
 
     def labeled_images_auto_classification(self):
         # format: <class_name> <x> <y> <w> <h>
-        class_folder_correspondence = {0: 'cars', 1: 'motos', 2: 'trucks', 3: 'pedestrians', 4: 'forbid_signals', 5: 'warning_signals', 6: 'stop_signals', 7: 'yield_signals'}
-        class_indexes = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0}
-        labels_list = os.listdir(self.labels_train_raw_path)
+        class_folder_correspondence = {0: 'cars', 1: 'motos', 2: 'trucks', 3: 'pedestrians', 4: 'forbid_signals', 5: 'warning_signals', 6: 'stop_signals', 7: 'yield_signals', 8: 'mandatory_signals'}
+        class_indexes = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
+        labels_list = os.listdir(self.mandatory_labels)
         labels_list.remove('classes.txt')
-        images = os.listdir(self.train_raw_path)
+        images = os.listdir(self.mandatory_raw)
         images = map(lambda l: int(l[:-4]), images)
         images = list(images)
         images.sort()
@@ -70,14 +72,14 @@ class DataPreprocessing:
 
         images_map = {}
         for i in images:
-            loaded_img = cv2.imread(self.train_raw_path + '/' + str(i) + '.png')
+            loaded_img = cv2.imread(self.mandatory_raw + '/' + str(i) + '.png')
             images_map[str(i) + '.txt'] = loaded_img
             print(str(i) + ' image successfully loaded => {', str(i) + '.txt :', loaded_img.shape, '}')
 
         print('!!!!!!!!!!!!! Images loaded successfully !!!!!!!!!!!!!')
 
         for file_name in labels_list:
-            labels = open(self.labels_train_raw_path + '/' + file_name, "r")
+            labels = open(self.mandatory_labels + '/' + file_name, "r")
             img = images_map[file_name]
             h_img, w_img, _ = img.shape
             print('Image', file_name, '----', 'Image Height:', h_img, '-', 'Image Width:', w_img)
@@ -91,7 +93,7 @@ class DataPreprocessing:
                 y2 = int((y+h/2)*h_img)
                 print('Label =>', c, int((x-w/2)*w_img), int((x+w/2)*w_img), int((y-h/2)*h_img), int((y+h/2)*h_img), ':', img.shape)
                 crop_img = img[y1:y2, x1:x2]
-                cv2.imwrite(os.path.join('D:\\DatasetTFG\\train\\' + class_folder_correspondence[c],
+                cv2.imwrite(os.path.join('D:\\DatasetTFG\\Labeling process\\Dataset result\\' + class_folder_correspondence[c],
                                          class_folder_correspondence[c] + str(class_indexes[c]) + '.png'), crop_img)
                 class_indexes[c] += 1
 
@@ -140,4 +142,4 @@ class DataPreprocessing:
 
 if __name__ == '__main__':
     dataset_preprocessor = DataPreprocessing()
-    dataset_preprocessor.png_to_jpg()
+    dataset_preprocessor.labeled_images_auto_classification()

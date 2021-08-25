@@ -59,17 +59,17 @@ def sliding_windows(model_name, model, input_size, source_path):
                     3: (0, 0, 0), 4: (255, 0, 255), 5: (255, 255, 255),
                     6: (230, 40, 20), 7: (0, 200, 255), 8: (0, 255, 115)}
     # list of Windows
-    windows = [Window(0, 0, 100, 100),  #
-               Window(0, 0, 140, 140),  #
-               Window(0, 0, 270, 240),  #
-               Window(0, 0, 240, 550),  #
-               Window(0, 0, 620, 620),  #
-               Window(0, 0, 725, 325),  #
-               Window(0, 0, 400, 200)]  #
+    windows = [Window(0, 0, 100, 100),
+               Window(0, 0, 140, 140),
+               Window(0, 0, 270, 240),
+               Window(0, 0, 240, 550),
+               Window(0, 0, 620, 620),
+               Window(0, 0, 725, 325),
+               Window(0, 0, 400, 200)]
 
     # Prepare the detection results directory
     # Check if results folder already exists and clear it, if not create it
-    result_dir = './sliding_windows_result/' + model_name + '/'
+    result_dir = './results/sliding_windows_result/' + model_name + '/'
     if os.path.isdir(result_dir):
         shutil.rmtree(result_dir)
     os.mkdir(result_dir)
@@ -172,15 +172,3 @@ def nms(det, final_det):
                 to_remove.append(d)
         for r in to_remove:
             det.remove(r)
-
-
-def clean_test_video():
-    test_dir = '../test_video/'
-    s = set(os.listdir(test_dir))
-    res_dir = '../sliding_windows_result/ResNet50_TL/'
-    to_remove = list()
-    for f in os.listdir(res_dir):
-        if f in s:
-            to_remove.append(f)
-    for f in to_remove:
-        os.remove(test_dir+f)

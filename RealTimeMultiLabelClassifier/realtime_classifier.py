@@ -4,6 +4,7 @@ import os
 import random
 import numpy as np
 import tensorflow as tf
+from matplotlib import pyplot as plt
 from six import BytesIO
 from PIL import Image
 from DeepLearningUtilities.progress_bar import progress_bar
@@ -38,9 +39,8 @@ def plot_detections(image_np, boxes, classes, scores, category_index, image_name
 
 
 class RealTimeClassifier:
-    def __init__(self, t_path='./dataset_realtime/train',
-                 a_path='./dataset_realtime/annotations',
-                 pipeline_config='./SSD_retinanet_config/ssd_resnet50_v1_fpn_1024x1024_coco17_tpu-8.config',
+    def __init__(self, t_path, a_path,
+                 pipeline_config='./RealTimeMultiLabelClassifier/SSD_retinanet_config/ssd_resnet50_v1_fpn_1024x1024_coco17_tpu-8.config',
                  checkpoint_path='./RealTimeMultiLabelClassifier/retinanet_checkpoints/ckpt-0',
                  save_checkpoint_path='./RealTimeMultiLabelClassifier/fine_tuning_checkpoints/',
                  save_config_path='./RealTimeMultiLabelClassifier/fine_tuning_configs/'):
@@ -193,11 +193,11 @@ class RealTimeClassifier:
         The part of the network that will be ignored is the classification prediction layer because I am going to define
         a new classification based on the real time road detection project.
         '''
-        # Inside box predictor modules of the network it is necessary to identify the variables in that are not going to
+        # Inside box predictor modules of the network it is necessary to identify the variables that are not going to
         # be restored from the checkpoint and in this way they will be fine tuned automatically, so they are listed now
         '''
         _base_tower_layers_for_heads: contains the layers for the prediction before the final bounding box prediction
-        and the layers for the prediction before the final class prediction.
+        and before the final class prediction.
         
         _box_prediction_head: points to the bounding box prediction layer.
         
@@ -207,8 +207,8 @@ class RealTimeClassifier:
         The target is to isolate this layers for retrain with the custom dataset
         '''
         box_predictor_checkpoint = tf.train.Checkpoint(
-            _base_tower_layers_for_heads=self.model._box_predictor._base_tower_layers_for_heads,
-            _box_prediction_head=self.model._box_predictor._box_prediction_head,
+            _base_tower_layers_for_heads=self.model. _box_predictor. _base_tower_layers_for_heads,
+            _box_prediction_head=self.model. _box_predictor. _box_prediction_head,
         )
         model_checkpoint = tf.train.Checkpoint(
             _feature_extractor=self.model._feature_extractor,
@@ -224,7 +224,7 @@ class RealTimeClassifier:
         self.fine_tuning_checkpoint_manager = tf.train.CheckpointManager(
             save_checkpoint, self.save_checkpoint_path, max_to_keep=1)
 
-        # Finishing it is necessary to run a dummy image to generate the model variables that are 0 when restoring
+        # Finishing, it is necessary to run a dummy image to generate the model variables that are 0 when restoring
         # from a checkpoint file but it is correctly initialized with the corresponding weights with the first image
         # prediction
 
@@ -282,9 +282,10 @@ class RealTimeClassifier:
     def train(self, b_size=5, lr=0.01):
         # Initialize custom training hyper-parameters
         batch_size = b_size
-        num_batches = 2000
+        num_batches = 2500
         learning_rate = lr
         optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
+        metrics = []
 
         # Selecting layers to perform fine tuning on them
         # In RetinaNet layers with "tower" in it's names refers to layers placed before the prediction layer
@@ -323,11 +324,23 @@ class RealTimeClassifier:
 
             # Training step
             total_loss = self.train_step(image_tensors, gt_boxes_list, gt_classes_list, optimizer, to_fine_tune)
+            metrics.append(float(total_loss.numpy()))
 
             # Show the model loss after training in actual batch
             print('batch ' + str(idx) + ' of ' + str(num_batches) + ', loss=' + str(total_loss.numpy()), flush=True)
 
         print('Finished fine tuning!')
+
+        # Plot metrics
+        x = list(range(1, len(metrics) + 1))
+        accuracy_comparison = plt.figure(figsize=(14, 7))
+        plt.plot(x, metrics, 'o-', color='blue', label='Fine Tuning Loss')
+        plt.title('Fine Tuning Results')
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.legend()
+        accuracy_comparison.savefig('./results/realtime_results/metrics/realtime_detector_loss.png')
+        print('Fine Tuning metrics saved on -> real_time_detector_loss.png')
 
         # Save the model checkpoint file
         self.fine_tuning_checkpoint_manager.save()
@@ -366,7 +379,7 @@ class RealTimeClassifier:
 
     def predict(self, source_path):
         class_id_offset = 1
-        result_dir = './real_time_results/'
+        result_dir = './results/realtime_results/'
         if os.path.isdir(result_dir):
             shutil.rmtree(result_dir)
         os.mkdir(result_dir)

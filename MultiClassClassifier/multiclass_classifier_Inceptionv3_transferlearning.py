@@ -1,6 +1,5 @@
 import os
 import tensorflow as tf
-from keras.models import model_from_json
 from tensorflow.keras import layers
 from tensorflow.keras import Model
 from tensorflow.keras.applications.inception_v3 import InceptionV3
@@ -10,17 +9,14 @@ from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
 
 
 class MultiClassClassifierInceptionV3TransferLearning:
-    def __init__(self, t_path='./dataset/train',
-                 v_path='./dataset/validation',
-                 i_size=(150, 150),
-                 b_size=20):
+    def __init__(self, t_path, v_path, i_size, b_size=20):
         self.train_path = t_path
         self.val_path = v_path
         self.input_size = i_size
         self.train_generator = None
         self.validation_generator = None
         self.model = None
-        self.local_weights_file = './inceptionv3_weights/inception_v3_weights_tf_dim_ordering_tf_kernels_notop.h5'
+        self.local_weights_file = './MultiClassClassifier/inceptionv3_weights/inception_v3_weights_tf_dim_ordering_tf_kernels_notop.h5'
 
         t_len = 0
         for d in os.listdir(t_path):
@@ -51,8 +47,9 @@ class MultiClassClassifierInceptionV3TransferLearning:
                                                                                   class_mode='categorical',
                                                                                   target_size=self.input_size)
 
-    def compile_model(self, num_classes=9, opt=Adam(learning_rate=0.0001)):
-        pre_trained_model = InceptionV3(input_shape=(150, 150, 3),
+    def compile_model(self, num_classes=10, opt=Adam(learning_rate=0.0001)):
+        self.input_size += (3,)
+        pre_trained_model = InceptionV3(input_shape=self.input_size,
                                         include_top=False,
                                         weights=None)
 
@@ -76,7 +73,7 @@ class MultiClassClassifierInceptionV3TransferLearning:
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-    def train(self, epochs=100, verbose=1):
+    def train(self, epochs=200, verbose=1):
         history = None
         if self.model is not None and self.train_generator is not None and self.validation_generator is not None:
             history = self.model.fit(self.train_generator,
@@ -86,7 +83,7 @@ class MultiClassClassifierInceptionV3TransferLearning:
                                      validation_data=self.validation_generator,
                                      validation_steps=self.val_length // self.batch_size,
                                      callbacks=[
-                                         ModelCheckpoint('./models_TL/multiclass_transferlearning_inceptionv3_save.h5',
+                                         ModelCheckpoint('./results/non_realtime_results/models/multiclass_transferlearning_inceptionv3_save.h5',
                                                          monitor='val_loss',
                                                          mode='min',
                                                          save_best_only=True,
@@ -104,7 +101,7 @@ class MultiClassClassifierInceptionV3TransferLearning:
         return self.model.evaluate(self.validation_generator)
 
     def load_model(self):
-        self.model = tf.keras.models.load_model('./models_TL/multiclass_transferlearning_inceptionv3_save.h5')
+        self.model = tf.keras.models.load_model('./results/non_realtime_results/models/multiclass_transferlearning_inceptionv3_save.h5')
 
     def predict(self, path):
         return self.model.predict(path)

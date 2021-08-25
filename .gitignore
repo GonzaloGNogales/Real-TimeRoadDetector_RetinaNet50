@@ -1,23 +1,7 @@
-dataset/
-dataset_realtime/
-first_results/
-inceptionv3_weights/
-last_results/
-models_TL/
-test_video/
-sliding_windows_result/
-images_sw/
-last_results/
-detected_video.avi
+datasets/
+MultiClassClassifier/inceptionv3_weights/
+results/
 video_input.mp4
-video_input_1.mp4
 RealTimeMultiLabelClassifier/retinanet_checkpoints/
 RealTimeMultiLabelClassifier/fine_tuning_checkpoints/
 RealTimeMultiLabelClassifier/fine_tuning_configs/
-real_time_results/
-final_realtime_detected_video.avi
-final video.avi
-__video_input.mp4
-detected_videos/
-nice_detected_video_extended_dataset_1000epochs.avi
-nice_detected_video_extended_dataset_3000epochs.avi

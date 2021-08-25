@@ -32,10 +32,10 @@ def plot_metrics_no_legend(history):
     plt.show()
 
 
-def plot_metrics_legend(history, case, v_loss, v_acc):
+def plot_metrics_legend(history, model_name, v_loss, v_acc):
     if history is not None:
-        if not os.path.isdir('./metrics_TL/' + case):
-            os.mkdir('./metrics_TL/' + case)
+        if not os.path.isdir('./results/non_realtime_results/metrics/' + model_name):
+            os.mkdir('./results/non_realtime_results/metrics/' + model_name)
 
         accuracy = history.history['accuracy']
         val_accuracy = history.history['val_accuracy']
@@ -49,19 +49,19 @@ def plot_metrics_legend(history, case, v_loss, v_acc):
         plt.plot(epochs, val_accuracy, 'b', label='Validation accuracy')
         plt.title('Training and validation accuracy')
         props = dict(boxstyle='round', facecolor='green', alpha=0.5)
-        ax_acc.text(0.95, 0.5, 'val_acc = {:.6f}'.format(v_acc), transform=ax_acc.transAxes, fontsize=12,
+        ax_acc.text(0.95, 0.5, 'best_val_acc = {:.6f}'.format(v_acc), transform=ax_acc.transAxes, fontsize=12,
                     horizontalalignment='right',
                     verticalalignment='center', bbox=props)
         plt.legend()
-        plt.savefig('./metrics_TL/' + case + '/' + 'Train and Validation Accuracy MultiClassClassifier.png')
+        plt.savefig('./results/non_realtime_results/metrics/' + model_name + '/' + 'train_and_validation_accuracy_' + model_name + '.png')
 
         loss_plot, ax_loss = plt.subplots()
         plt.plot(epochs, loss, 'r', label='Training Loss')
         plt.plot(epochs, val_loss, 'b', label='Validation Loss')
         plt.title('Training and validation loss')
         props = dict(boxstyle='round', facecolor='blue', alpha=0.5)
-        ax_loss.text(0.95, 0.5, 'val_loss = {:.6f}'.format(v_loss), transform=ax_loss.transAxes, fontsize=12,
+        ax_loss.text(0.95, 0.5, 'best_val_loss = {:.6f}'.format(v_loss), transform=ax_loss.transAxes, fontsize=12,
                      horizontalalignment='right',
                      verticalalignment='center', bbox=props)
         plt.legend()
-        plt.savefig('./metrics_TL/' + case + '/' + 'Train and Validation Loss MultiClassClassifier.png')
+        plt.savefig('./results/non_realtime_results/metrics/' + model_name + '/' + 'train_and_validation_loss_' + model_name + '.png')

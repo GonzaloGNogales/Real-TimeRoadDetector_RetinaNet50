@@ -6,10 +6,7 @@ from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
 
 
 class MultiClassClassifierResNet50TransferLearning:
-    def __init__(self, t_path='./dataset/train',
-                 v_path='./dataset/validation',
-                 i_size=(224, 224),
-                 b_size=20):
+    def __init__(self, t_path, v_path, i_size, b_size=20):
         self.train_path = t_path
         self.val_path = v_path
         self.input_size = i_size
@@ -46,10 +43,10 @@ class MultiClassClassifierResNet50TransferLearning:
                                                                                   class_mode='categorical',
                                                                                   target_size=self.input_size)
 
-    def compile_model(self, num_classes=9, opt='SGD'):
+    def compile_model(self, num_classes=10, opt='SGD'):
         self.input_size += (3,)
         inputs = tf.keras.layers.Input(self.input_size)
-        feature_extractor = tf.keras.applications.resnet.ResNet50(input_shape=(224, 224, 3),
+        feature_extractor = tf.keras.applications.resnet.ResNet50(input_shape=self.input_size,
                                                                   include_top=False,
                                                                   weights='imagenet')(inputs)
 
@@ -65,7 +62,7 @@ class MultiClassClassifierResNet50TransferLearning:
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-    def train(self, epochs=100, verbose=1):
+    def train(self, epochs=200, verbose=1):
         history = None
         if self.model is not None and self.train_generator is not None and self.validation_generator is not None:
             history = self.model.fit(self.train_generator,
@@ -75,7 +72,7 @@ class MultiClassClassifierResNet50TransferLearning:
                                      validation_data=self.validation_generator,
                                      validation_steps=self.val_length // self.batch_size,
                                      callbacks=[
-                                         ModelCheckpoint('./models_TL/multiclass_transferlearning_resnet50_saveweights.h5',
+                                         ModelCheckpoint('./results/non_realtime_results/models/multiclass_transferlearning_resnet50_saveweights.h5',
                                                          monitor='val_loss',
                                                          mode='min',
                                                          save_best_only=True,
@@ -90,7 +87,7 @@ class MultiClassClassifierResNet50TransferLearning:
                                          ])
 
         model_json_architecture = self.model.to_json()
-        with open('./models_TL/multiclass_transferlearning_resnet50.json', 'w') as json_file:
+        with open('./results/non_realtime_results/models/multiclass_transferlearning_resnet50.json', 'w') as json_file:
             json_file.write(model_json_architecture)
 
         return history
@@ -101,14 +98,11 @@ class MultiClassClassifierResNet50TransferLearning:
                            metrics=['accuracy'])
         return self.model.evaluate(self.validation_generator)
 
-    def load_model_111(self):
-        self.model = tf.keras.models.load_model('./models_TL/multiclass_transferlearning_resnet50_save.h5')
-
     def load_model(self):
-        with open('./models_TL/multiclass_transferlearning_resnet50.json', 'r') as json_file:
+        with open('./results/non_realtime_results/models/multiclass_transferlearning_resnet50.json', 'r') as json_file:
             json_loaded_model = json_file.read()
         self.model = tf.keras.models.model_from_json(json_loaded_model)
-        self.model.load_weights('./models_TL/multiclass_transferlearning_resnet50_saveweights.h5')
+        self.model.load_weights('./results/non_realtime_results/models/multiclass_transferlearning_resnet50_saveweights.h5')
 
     def predict(self, path):
         return self.model.predict(path)

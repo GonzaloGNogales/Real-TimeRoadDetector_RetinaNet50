@@ -54,11 +54,7 @@ class CustomVGG(tf.keras.Model):
 
 
 class MultiClassClassifierVGG16:
-    def __init__(self, t_path='./dataset/train',
-                 v_path='./dataset/validation',
-                 i_size=(224, 224),
-                 b_size=20,
-                 num_classes=9):
+    def __init__(self, t_path, v_path, i_size, num_classes, b_size=20):
         self.train_path = t_path
         self.val_path = v_path
         self.input_size = i_size
@@ -98,7 +94,7 @@ class MultiClassClassifierVGG16:
     def compile_model(self, opt=Adam(learning_rate=0.0001)):
         self.model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
-    def train(self, epochs=500, verbose=1):
+    def train(self, epochs=200, verbose=1):
         history = None
         if self.model is not None and self.train_generator is not None and self.validation_generator is not None:
             history = self.model.fit(self.train_generator,
@@ -107,7 +103,7 @@ class MultiClassClassifierVGG16:
                                      verbose=verbose,
                                      validation_data=self.validation_generator,
                                      validation_steps=self.val_length // self.batch_size,
-                                     callbacks=[ModelCheckpoint('./last_results/last_models/multiclass_vgg16_save.h5',
+                                     callbacks=[ModelCheckpoint('./results/non_realtime_results/models/multiclass_vgg16_save.h5',
                                                                 monitor='val_loss',
                                                                 mode='min',
                                                                 save_best_only=True,
@@ -120,14 +116,13 @@ class MultiClassClassifierVGG16:
                                                     min_delta=0.0005,
                                                     verbose=1)
                                                 ])
-            self.model.save('./last_results/last_models/multiclass_VGG16.h5')
         return history
 
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
 
     def load_model(self):
-        self.model = tf.keras.models.load_model('./last_results/last_models/multiclass_VGG16')
+        self.model = tf.keras.models.load_model('./results/non_realtime_results/models/multiclass_vgg16_save.h5')
 
     def predict(self, path):
         return self.model.predict(path)
