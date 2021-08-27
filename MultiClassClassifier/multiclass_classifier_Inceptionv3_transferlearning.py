@@ -73,7 +73,7 @@ class MultiClassClassifierInceptionV3TransferLearning:
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-    def train(self, epochs=200, verbose=1):
+    def train(self, epochs=100, verbose=1):
         history = None
         if self.model is not None and self.train_generator is not None and self.validation_generator is not None:
             history = self.model.fit(self.train_generator,
@@ -91,8 +91,8 @@ class MultiClassClassifierInceptionV3TransferLearning:
                                          EarlyStopping(
                                              monitor='val_loss',
                                              mode='min',
-                                             patience=10,
-                                             min_delta=0.0005,
+                                             patience=40,
+                                             min_delta=0.005,
                                              verbose=1)
                                          ])
         return history

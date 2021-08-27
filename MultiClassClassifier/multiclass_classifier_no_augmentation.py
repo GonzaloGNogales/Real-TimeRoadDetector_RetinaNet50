@@ -77,7 +77,7 @@ class MultiClassClassifierNoAugmentation:
 
         self.model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
-    def train(self, epochs=200, verbose=1, architecture_ver='v1'):
+    def train(self, epochs=100, verbose=1, architecture_ver='v1'):
         history = None
         if self.model is not None and self.train_generator is not None and self.validation_generator is not None:
             history = self.model.fit(self.train_generator,
@@ -95,8 +95,8 @@ class MultiClassClassifierNoAugmentation:
                                                 EarlyStopping(
                                                     monitor='val_loss',
                                                     mode='min',
-                                                    patience=10,
-                                                    min_delta=0.0005,
+                                                    patience=40,
+                                                    min_delta=0.005,
                                                     verbose=1)
                                                 ])
         return history
@@ -104,8 +104,9 @@ class MultiClassClassifierNoAugmentation:
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
 
-    def load_model(self, av='v1'):
-        self.input_size += (3,)
+    def load_model(self, av='v1', mod_input_size=True):
+        if mod_input_size:
+            self.input_size += (3,)
         self.model = tf.keras.models.load_model('./results/non_realtime_results/models/multiclass_no_augmentation_' + str(
                                                 self.input_size) + '_' + av + '_save.h5')
 

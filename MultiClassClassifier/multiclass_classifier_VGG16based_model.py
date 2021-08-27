@@ -94,7 +94,7 @@ class MultiClassClassifierVGG16:
     def compile_model(self, opt=Adam(learning_rate=0.0001)):
         self.model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
-    def train(self, epochs=200, verbose=1):
+    def train(self, epochs=100, verbose=1):
         history = None
         if self.model is not None and self.train_generator is not None and self.validation_generator is not None:
             history = self.model.fit(self.train_generator,
@@ -112,8 +112,8 @@ class MultiClassClassifierVGG16:
                                                 EarlyStopping(
                                                     monitor='val_loss',
                                                     mode='min',
-                                                    patience=1,
-                                                    min_delta=0.0005,
+                                                    patience=10,
+                                                    min_delta=0.005,
                                                     verbose=1)
                                                 ])
         return history

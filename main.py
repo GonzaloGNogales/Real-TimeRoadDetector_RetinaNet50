@@ -110,7 +110,7 @@ if __name__ == '__main__':
                 if model_ver is None:
                     dnn.load_model()
                 else:  # Select model version
-                    dnn.load_model(av=model_ver)
+                    dnn.load_model(av=model_ver, mod_input_size=False)
 
                 # Evaluate the model to get the loss value and the metrics values of the model in validation
                 loss, accuracy = dnn.evaluate()
@@ -186,7 +186,7 @@ if __name__ == '__main__':
                 print('There was some error during the detection process, try changing model architecture')
 
         else:  # Evaluate model
-            if args.dnn == 'RetinaNet_TL_FT':
+            if args.dnn != 'RetinaNet_TL_FT':
                 loss, accuracy = dnn.evaluate()
 
                 # Code to save the evaluation results on a txt file inside evaluations directory
@@ -194,7 +194,7 @@ if __name__ == '__main__':
                 file.write('[' + str(args.dnn) + '] -> Loss: ' + str(loss) + ' | Accuracy: ' + str(accuracy) + '\n')
                 file.close()
             else:
-                raise ValueError('Real time detector cannot be evaluated')
+                print('The selected real time detector cannot be evaluated')
 
     else:
         raise ValueError('The dnn failed during initialization and is None')
