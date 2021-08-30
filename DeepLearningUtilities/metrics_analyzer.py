@@ -49,7 +49,7 @@ def plot_metrics_legend(history, model_name, v_loss, v_acc):
         plt.plot(epochs, val_accuracy, 'b', label='Validation accuracy')
         plt.title('Training and validation accuracy')
         props = dict(boxstyle='round', facecolor='green', alpha=0.5)
-        ax_acc.text(0.95, 0.5, 'best_val_acc = {:.6f}'.format(v_acc), transform=ax_acc.transAxes, fontsize=12,
+        ax_acc.text(0.95, 0.55, 'best_val_acc = {:.6f}'.format(v_acc), transform=ax_acc.transAxes, fontsize=12,
                     horizontalalignment='right',
                     verticalalignment='center', bbox=props)
         plt.legend()
@@ -60,7 +60,7 @@ def plot_metrics_legend(history, model_name, v_loss, v_acc):
         plt.plot(epochs, val_loss, 'b', label='Validation Loss')
         plt.title('Training and validation loss')
         props = dict(boxstyle='round', facecolor='blue', alpha=0.5)
-        ax_loss.text(0.95, 0.5, 'best_val_loss = {:.6f}'.format(v_loss), transform=ax_loss.transAxes, fontsize=12,
+        ax_loss.text(0.95, 0.55, 'best_val_loss = {:.6f}'.format(v_loss), transform=ax_loss.transAxes, fontsize=12,
                      horizontalalignment='right',
                      verticalalignment='center', bbox=props)
         plt.legend()

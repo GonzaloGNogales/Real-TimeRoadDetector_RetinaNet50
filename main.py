@@ -105,12 +105,13 @@ if __name__ == '__main__':
             else:
                 h = dnn.train()
 
-            if args.dnn != 'RetinaNet_TL_FT':  # For the real time detector the metrics are different
-                # Load the model to see the best loss and accuracy not the last ones
-                if model_ver is None:
-                    dnn.load_model()
-                else:  # Select model version
-                    dnn.load_model(av=model_ver, mod_input_size=False)
+            if args.dnn != 'RetinaNet_TL_FT':  # For the real time detector the metrics are coded internally
+                if args.dnn != 'VGG16':
+                    # Load the model to see the best loss and accuracy not the last ones
+                    if model_ver is None:
+                        dnn.load_model()
+                    else:  # Select model version
+                        dnn.load_model(av=model_ver, mod_input_size=False)
 
                 # Evaluate the model to get the loss value and the metrics values of the model in validation
                 loss, accuracy = dnn.evaluate()
@@ -144,46 +145,62 @@ if __name__ == '__main__':
             print('test_video directory ready for processing')
 
             # Start capturing the video and save the frames with jpg format into the video_frames directory
-            video = cv2.VideoCapture('video_input.mp4')
-            print('Processing video frames! wait few minutes...')
-            success, image = video.read()
-            count = 0
-            while success:
-                cv2.imwrite(frames_dir + '%d.jpg' % count, image)  # save frame as JPG file
+            if os.path.isfile('./video_input.mp4'):
+                video = cv2.VideoCapture('video_input.mp4')
+                print('Processing video frames! wait few minutes...')
                 success, image = video.read()
-                count += 1
-            print('Finished processing video frames!')
+                count = 0
+                while success:
+                    cv2.imwrite(frames_dir + '%d.jpg' % count, image)  # save frame as JPG file
+                    success, image = video.read()
+                    count += 1
+                print('Finished processing video frames!')
 
-            directory = None
-            # Select if you want to detect using sliding windows algorithm or real time detection
-            if args.sliding_windows == 'YES' and args.dnn != 'RetinaNet_TL_FT':
-                directory = sliding_windows(args.dnn, dnn, input_size, frames_dir)
-            elif args.real_time == 'YES':
-                directory = dnn.predict(frames_dir)
+                directory = None
+                # Select if you want to detect using sliding windows algorithm or real time detection
+                if args.sliding_windows == 'YES':
+                    if args.dnn != 'RetinaNet_TL_FT':
+                        directory = sliding_windows(args.dnn, dnn, input_size, frames_dir)
+                    else:
+                        print('The selected dnn cannot perform the sliding windows algorithm')
+                elif args.real_time == 'YES':
+                    if args.dnn == 'RetinaNet_TL_FT':
+                        directory = dnn.predict(frames_dir)
+                    else:
+                        print('The selected dnn cannot perform real time detections')
+                else:
+                    print('Specify the options --sliding_windows [YES] or --real_time [YES] in the command line')
 
-            if directory is not None:
-                listed_results_dir = os.listdir(directory)
-                sorted_res_path = map(lambda l: int(l[:-4]), listed_results_dir)
-                sorted_res_path = list(sorted_res_path)
-                sorted_res_path.sort()
+                if directory is not None:
+                    listed_results_dir = os.listdir(directory)
+                    if args.real_time == 'YES':
+                        listed_results_dir.remove('metrics')
+                    else:
+                        listed_results_dir.remove(args.dnn + '_detections.txt')
+                    listed_results_dir.remove('resulting_video')
+                    sorted_res_path = map(lambda l: int(l[:-4]), listed_results_dir)
+                    sorted_res_path = list(sorted_res_path)
+                    sorted_res_path.sort()
 
-                size = (1920, 1080)  # FullHD
-                output_video = cv2.VideoWriter(directory + 'resulting_video/resulting video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
+                    size = (1920, 1080)  # FullHD
+                    output_video = cv2.VideoWriter(directory + 'resulting_video/resulting video.avi', cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
 
-                it = 0
-                total = len(os.listdir(directory))
-                if total != 0:
-                    progress_bar(it, total, prefix='Assembling video frames: ', suffix='Complete', length=50)
-                for frame in sorted_res_path:
-                    it += 1
-                    progress_bar(it, total, prefix='Assembling video frames: ', suffix='Complete', length=50)
-                    f = cv2.imread(directory + str(frame) + '.jpg')
-                    output_video.write(f)
+                    it = 0
+                    total = len(os.listdir(directory))
+                    if total != 0:
+                        progress_bar(it, total, prefix='Assembling video frames: ', suffix='Complete', length=50)
+                    for frame in sorted_res_path:
+                        it += 1
+                        progress_bar(it, total, prefix='Assembling video frames: ', suffix='Complete', length=50)
+                        f = cv2.imread(directory + str(frame) + '.jpg')
+                        output_video.write(f)
 
-                output_video.release()
-                print('The video is finished! See the results playing the file: detected_video.avi')
+                    output_video.release()
+                    print('The video is finished! See the results playing the file: detected_video.avi located in the realtime_results directory!')
+                else:
+                    print('There was some error during the detection process, try changing model architecture')
             else:
-                print('There was some error during the detection process, try changing model architecture')
+                print('!!!The file video_input.mp4 for detecting does not exist!!!')
 
         else:  # Evaluate model
             if args.dnn != 'RetinaNet_TL_FT':

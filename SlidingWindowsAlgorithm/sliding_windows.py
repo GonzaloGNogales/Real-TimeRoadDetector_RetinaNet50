@@ -53,11 +53,12 @@ def sliding_windows_test(model_name, model, input_size=(150, 150), show=False):
 
 
 def sliding_windows(model_name, model, input_size, source_path):
-    classes = {0: 'car', 1: 'forbid', 2: 'moto', 3: 'none', 4: 'ped', 5: 'stop', 6: 'truck',
-               7: 'warning', 8: 'yield'}
+    classes = {0: 'car', 1: 'forbid', 2: 'mandatory', 3: 'moto', 4: 'none', 5: 'ped', 6: 'stop', 7: 'truck',
+               8: 'warning', 9: 'yield'}
     class_colors = {0: (255, 255, 0), 1: (0, 0, 255), 2: (0, 255, 0),
                     3: (0, 0, 0), 4: (255, 0, 255), 5: (255, 255, 255),
-                    6: (230, 40, 20), 7: (0, 200, 255), 8: (0, 255, 115)}
+                    6: (230, 40, 20), 7: (0, 200, 255), 8: (0, 255, 115),
+                    9: (115, 75, 32)}
     # list of Windows
     windows = [Window(0, 0, 100, 100),
                Window(0, 0, 140, 140),
@@ -73,6 +74,7 @@ def sliding_windows(model_name, model, input_size, source_path):
     if os.path.isdir(result_dir):
         shutil.rmtree(result_dir)
     os.mkdir(result_dir)
+    os.mkdir(result_dir + 'resulting_video/')
     detections_file = open(result_dir + model_name + '_detections.txt', 'a')
     detections_file.truncate(0)
 
@@ -91,9 +93,10 @@ def sliding_windows(model_name, model, input_size, source_path):
         truck_detections = list()
         warning_signal_detections = list()
         yield_signal_detections = list()
-        detections = {0: car_detections, 1: forbid_signal_detections, 2: moto_detections,
-                      4: pedestrian_detections, 5: stop_signal_detections, 6: truck_detections,
-                      7: warning_signal_detections, 8: yield_signal_detections}
+        mandatory_signal_detections = list()
+        detections = {0: car_detections, 1: forbid_signal_detections, 2: mandatory_signal_detections,
+                      3: moto_detections, 5: pedestrian_detections, 6: stop_signal_detections,
+                      7: truck_detections, 8: warning_signal_detections, 9: yield_signal_detections}
 
         img_path = source_path + '/' + im
         final_img = cv2.imread(img_path)

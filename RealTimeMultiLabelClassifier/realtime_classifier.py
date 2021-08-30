@@ -380,9 +380,13 @@ class RealTimeClassifier:
     def predict(self, source_path):
         class_id_offset = 1
         result_dir = './results/realtime_results/'
+        sav_metrics = cv2.imread('./results/realtime_results/metrics/realtime_detector_loss.png')
         if os.path.isdir(result_dir):
             shutil.rmtree(result_dir)
         os.mkdir(result_dir)
+        os.mkdir(result_dir + 'metrics/')
+        cv2.imwrite('./results/realtime_results/metrics/realtime_detector_loss.png', sav_metrics)
+        os.mkdir(result_dir + 'resulting_video/')
 
         s_path = os.listdir(source_path)
         sorted_s_path = map(lambda l: int(l[:-4]), s_path)

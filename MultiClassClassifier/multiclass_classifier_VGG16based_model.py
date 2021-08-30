@@ -103,26 +103,23 @@ class MultiClassClassifierVGG16:
                                      verbose=verbose,
                                      validation_data=self.validation_generator,
                                      validation_steps=self.val_length // self.batch_size,
-                                     callbacks=[ModelCheckpoint('./results/non_realtime_results/models/multiclass_vgg16_save.h5',
-                                                                monitor='val_loss',
-                                                                mode='min',
-                                                                save_best_only=True,
-                                                                save_weights_only=True,
-                                                                verbose=1),
-                                                EarlyStopping(
+                                     callbacks=[EarlyStopping(
                                                     monitor='val_loss',
                                                     mode='min',
-                                                    patience=10,
-                                                    min_delta=0.005,
+                                                    patience=3,
+                                                    min_delta=0.0005,
                                                     verbose=1)
                                                 ])
+            self.model.save_weights('./results/non_realtime_results/models/multiclass_vgg16_save', save_format='tf')
         return history
 
     def evaluate(self):
         return self.model.evaluate(self.validation_generator)
 
     def load_model(self):
-        self.model = tf.keras.models.load_model('./results/non_realtime_results/models/multiclass_vgg16_save.h5')
+        self.model.compile(optimizer='SGD', loss='categorical_crossentropy', metrics=['accuracy'])
+        self.model.train_on_batch(tf.zeros([1, 224, 224, 3]), [1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        self.model.load_weights('./results/non_realtime_results/models/multiclass_vgg16_save')
 
     def predict(self, path):
         return self.model.predict(path)
